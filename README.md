@@ -1,6 +1,8 @@
 ## Introduction
 
-BerryBMS is a small project to gather and show Schneider Conext and JK BMS data. It is meant to show what's relevant in a single page.
+BerryBMS is a small project to gather and show Schneider Conext and JK BMS data. It is meant to show what's relevant in a single page. Here's how the dashboard looks like with four JK BMS:
+
+![dashboard](./images/berrydash.png)
 
 ## Installation
 
