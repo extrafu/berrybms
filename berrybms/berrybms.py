@@ -72,11 +72,12 @@ def main(daemon):
         lowest_id = 0
 
         if all_bms != None:
-            for bms in all_bms.values():
+            for key in all_bms.keys():
+                bms = all_bms[key]
                 bms_id = bms['id']
                 bms_port = bms['port']
 
-                jkbms = JKBMS(bms_id, bms_port)
+                jkbms = JKBMS(key, bms_id, bms_port)
                 c = jkbms.connect()
 
                 if c == None:

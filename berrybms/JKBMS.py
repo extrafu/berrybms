@@ -19,9 +19,11 @@ from Register import Register
 class JKBMS(ModbusDevice):
 
     def __init__(self,
+                 name,
                  id,
                  port):
         super().__init__(id)
+        self.name = name
         self.port = port
         self.registers = [
             Register(self.id, "BatChargeEN", 0x1070, ModbusClientMixin.DATATYPE.UINT32),
@@ -83,7 +85,9 @@ class JKBMS(ModbusDevice):
 
     def publish(self, dict):
         topic_soc = "bms-%d" % self.id
-        dict[topic_soc] = self.dump()
+        d = self.dump()
+        d["name"] = self.name
+        dict[topic_soc] = d
 
     def __str__(self):
         self.getCellVoltages()
@@ -107,7 +111,7 @@ class JKBMS(ModbusDevice):
         pack_capacity = self.getRegister('SOCFullChargeCap').value
         pack_remaining = self.getRegister('SOCCapRemain').value
 
-        s = f"== JK BMS (id {self.id}) - {bms_model} (v{bms_hw_version}) - sw v{bms_sw_version}) ==\n"          
+        s = f"== {self.name} (id {self.id}) - {bms_model} (v{bms_hw_version}) - sw v{bms_sw_version}) ==\n"
         s += f"Alarms?\t\t\t{alarms}\n"
         s += f"SOC:\t\t\t{soc} ({cycle_count} cycle(s))\n"
         s += f"Voltage:\t\t{pack_voltage:.2f}v\n"

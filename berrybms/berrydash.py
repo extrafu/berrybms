@@ -213,6 +213,7 @@ def buildBMSGauge(key, bms):
     lowestCellIndex = 0
     badges = []
     tooltips = []
+
     for i in range(0,cellCount):
         cellVoltage = round(float(bms.get(f'CellVol{i}')),3)
         if cellVoltage < lowestCellVoltage:
@@ -236,7 +237,7 @@ def buildBMSGauge(key, bms):
     card = dbc.Card(
         [
             dbc.CardHeader(children=[
-                html.B("{} - {} (v{}) ".format(key, bms['ManufacturerDeviceID'], bms['SoftwareVersion']), style={'font-size':'13px'}),
+                html.B("{} - {} (v{}) ".format(bms["name"], bms['ManufacturerDeviceID'], bms['SoftwareVersion']), style={'font-size':'13px'}),
                 html.I(className='fa-solid fa-triangle-exclamation', style={"color": warning_icon_color}, id=f'{key}-warning'),
                 dbc.Tooltip(warning_message, target=f'{key}-warning')
                 ]),    
