@@ -58,6 +58,6 @@ class ConextAGS(ModbusDevice):
         socLevelStartGenerator = self.getRegister("SOCLevelStartGenerator").value
 
         s = f"== Conext AGS (id {self.id}) ==\n"
-        s += f"Generator Mode:\t{generatorMode}\n"
-        s += f"SOC Triggers\tStart: {socLevelStartGenerator}%\tStop: {socLevelStopGenerator}%"
+        s += f"Generator Mode:\t\t{generatorMode}\n"
+        s += f"SOC Triggers\t\tStart: {socLevelStartGenerator}%\tStop: {socLevelStopGenerator}%"
         return s

@@ -126,14 +126,14 @@ def main(daemon):
             device.disconnect()
         all_modbus_devices = []
 
-        print("== Global Statistics ==")
+        print("== Global BMS Statistics ==")
         average_voltage = average_voltage/active_bms
         average_soc = average_soc/active_bms
 
-        print(f"Average BMS Voltage:\t\t{average_voltage:.2f}v")
-        print(f"Average BMS SOC:\t\t{average_soc:.1f}%")
-        print("Total BMS used capacity:\t%.2f Ah (~ %.2f KWh)" % (total_used_capacity, total_used_capacity*average_voltage/1000))
-        print(f"BMS Lowest SOC:\t\t\t{lowest_id} ({lowest_soc}%)  Highest: {highest_id} ({highest_soc}%)")
+        print(f"Average Voltage:\t{average_voltage:.2f}v")
+        print(f"Average SOC:\t\t{average_soc:.1f}%")
+        print("Total Used Capacity:\t%.2f Ah (~ %.2f KWh)" % (total_used_capacity, total_used_capacity*average_voltage/1000))
+        print(f"Lowest SOC:\t\t{lowest_id} ({lowest_soc}%)  Highest: {highest_id} ({highest_soc}%)")
 
         if daemon:
             updateinterval = config.get('updateinterval')

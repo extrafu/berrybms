@@ -52,8 +52,8 @@ class ConextBattMon(ModbusDevice):
         soc = self.getRegister("BatterySOC").value
         
         s = f"== Conext BattMon (id {self.id}) ==\n"
-        s += f"Capacity:\t{capacityRemaining}Ah of {capacity}Ah ({capacityRemoved}Ah removed)\n"
-        s += f"Active Power:\t{voltage:.2f}v / {current}A\n"
-        s += f'SOC:\t\t{soc}%'
+        s += f"Capacity:\t\t{capacityRemaining}Ah of {capacity}Ah ({capacityRemoved}Ah removed)\n"
+        s += f"Active Power:\t\t{voltage:.2f}v / {current}A\n"
+        s += f'SOC:\t\t\t{soc}%'
 
         return s
