@@ -17,7 +17,7 @@ Then, proceed with the following instructions to setup the local Python environm
 ```
 cd ~/berrybms
 mkdir venv
-python3 -m venv
+python3 -m venv venv
 source venv/bin/activate
 pip3 install pymodbus==3.8.2
 pip3 install pyyaml
@@ -30,6 +30,7 @@ If you want to have the Web GUI that uses Dash/Plotly:
 ```
 pip3 install dash
 pip3 install dash-bootstrap-components
+pip3 install dash-bootstrap-templates
 pip3 install https://github.com/plotly/dash-daq/archive/refs/heads/master.zip
 pip3 install flask-mqtt
 ```
