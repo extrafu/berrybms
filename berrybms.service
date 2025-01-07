@@ -1,0 +1,12 @@
+[Unit]
+Description=BerryBMS Service
+After=network.target
+
+[Service]
+Type=idle
+Restart=on-failure
+User=ludovic
+ExecStart=/bin/bash -c 'cd /home/ludovic/berrybms/ && source venv/bin/activate && python berrybms/berrybms.py -d'
+
+[Install]
+WantedBy=multi-user.target
