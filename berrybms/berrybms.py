@@ -132,7 +132,7 @@ def main(daemon):
 
         print(f"Average Voltage:\t{average_voltage:.2f}v")
         print(f"Average SOC:\t\t{average_soc:.1f}%")
-        print("Total Used Capacity:\t%.2f Ah (~ %.2f KWh)" % (total_used_capacity, total_used_capacity*average_voltage/1000))
+        print(f"Total Used Capacity:\t{total_used_capacity:.2f} Ah (~ {(total_used_capacity*average_voltage/1000):.2f} KWh)")
         print(f"Lowest SOC:\t\t{lowest_id} ({lowest_soc}%)  Highest: {highest_id} ({highest_soc}%)")
 
         if daemon:

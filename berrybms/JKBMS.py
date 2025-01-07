@@ -110,15 +110,16 @@ class JKBMS(ModbusDevice):
         discharge_enabled = self.getRegister('BatDisChargeEN').value
         pack_capacity = self.getRegister('SOCFullChargeCap').value
         pack_remaining = self.getRegister('SOCCapRemain').value
+        status = "charging" if battery_current > 0 else "discharging"
 
         s = f"== {self.name} (id {self.id}) - {bms_model} (v{bms_hw_version}) - sw v{bms_sw_version}) ==\n"
         s += f"Alarms?\t\t\t{alarms}\n"
         s += f"SOC:\t\t\t{soc} ({cycle_count} cycle(s))\n"
         s += f"Voltage:\t\t{pack_voltage:.2f}v\n"
-        s += "Cell voltages:\t\t%s\n" % (str(self.getCellVoltages()))
-        s += f"Cell average voltage:\t{cell_avg_voltage:.3f} ({cell_count} cells)\n"
-        s += "Battery current:\t%.3f (%s %.2f Wh)\n" % (battery_current, ("charging" if battery_current > 0 else "discharging"), pack_voltage*battery_current)
-        s += f"Discharge enabled?\t{discharge_enabled}\n"
-        s += f"Remaining Ah capacity:\t{pack_remaining:.2f} ({pack_capacity} Ah capacity)"
+        s += f"Cell Voltages:\t\t{str(self.getCellVoltages())}\n"
+        s += f"Cell Average Voltage:\t{cell_avg_voltage:.3f} ({cell_count} cells)\n"
+        s += f"Battery Current:\t{battery_current:.3f}A ({status} {pack_voltage*battery_current:.2f}W)\n"
+        s += f"Discharge Enabled?\t{discharge_enabled}\n"
+        s += f"Remaining Capacity:\t{pack_remaining:.2f}Ah ({pack_capacity}Ah capacity)"
 
         return s
