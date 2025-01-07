@@ -49,7 +49,7 @@ python3 -m venv
 python3 berrybms/berrybms.py
 ```
 
-This will output tons of information and push things in MQTT. What's pushed in MQTT can be used by the Dash/Plotly frontend of this application. Alternatively, you can use the date with any other solution, like Node-RED.
+This will output tons of information and push things in MQTT. What's pushed in MQTT can be used by the Dash/Plotly frontend of this application. Alternatively, you can use the date with any other solution, like Node-RED. You can also add the `-d` parameter to make it run continuously, it will pause at the configured interval between each data fetch.
 
 If you want to try the Web GUI, simply do:
 
