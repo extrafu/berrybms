@@ -355,7 +355,7 @@ def update_tabs(n):
         tab = dbc.Tab(id=f'tab-{tab_index}',
                       label=period.replace('This',''),
                       active_label_style={"color": "#F39C12"},
-                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '71vh', 'height': '53vh'})]
+                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '50vw', 'height': '50vh'})]
                     )
         tabs.append(tab)
         tab_index += 1
