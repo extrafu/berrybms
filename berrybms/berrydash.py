@@ -211,6 +211,7 @@ def buildBMSGauge(key, bms):
     lowestCellVoltage = sys.maxsize
     highestCellIndex = 0
     lowestCellIndex = 0
+    cellVoltageDrift = 0
     badges = []
     tooltips = []
 
@@ -228,16 +229,24 @@ def buildBMSGauge(key, bms):
 
     badges[highestCellIndex].color = "green"
     badges[lowestCellIndex].color = "warning"
+    cellVoltageDrift = highestCellVoltage-lowestCellVoltage
 
     warning_icon_color = 'gray'
     warning_message = 'No warning'
     if bms.get("Alarms") > 0:
         warning_icon_color = 'red'
 
+    if bms['BatCurrent'] > 0:
+        charge_discharge_icon = 'fa-solid fa-plus'
+        charge_discharge_icon_color = 'green'
+    else:
+        charge_discharge_icon = 'fa-solid fa-minus'
+        charge_discharge_icon_color = 'red'
+
     card = dbc.Card(
         [
             dbc.CardHeader(children=[
-                html.B("{} - {} (v{}) ".format(bms["name"], bms['ManufacturerDeviceID'], bms['SoftwareVersion']), style={'font-size':'13px'}),
+                html.B(f"{bms['name']} - {bms['ManufacturerDeviceID']} (v{bms['SoftwareVersion']}) ", style={'font-size':'13px'}),
                 html.I(className='fa-solid fa-triangle-exclamation', style={"color": warning_icon_color}, id=f'{key}-warning'),
                 dbc.Tooltip(warning_message, target=f'{key}-warning')
                 ]),    
@@ -245,21 +254,19 @@ def buildBMSGauge(key, bms):
                 daq.Gauge(
                     showCurrentValue=True,
                     color={"gradient": True, "ranges": {"red": [0, 25], "yellow": [25, 65], "green": [65, 100]}},
-                    #label="{} - {} (v{})".format(key, bms['ManufacturerDeviceID'], bms['SoftwareVersion']),
                     labelPosition='top',
                     id=f'soc-gauge-{key}',
                     max=100,
                     size=200,
-                    units="{:.2f} Ah of {:.0f} Ah".format(bms['SOCCapRemain'], bms['SOCFullChargeCap']),
+                    units=f"{bms['SOCCapRemain']:.2f} Ah of {bms['SOCFullChargeCap']:.0f}",
                     style={'display': 'block', 'margin-bottom': -80, 'margin-top': -30}, 
                     value=bms['SOCStateOfcharge'],
                     digits=0   # available after 0.5, see https://github.com/plotly/dash-daq/pull/117/files
                 ),
-                html.Span("{} at {:.2f}A/{:.0f}W ({} cycles)".format(("Charging" if bms['BatCurrent'] > 0 else "Discharging"),
-                                                            abs(bms['BatCurrent']),
-                                                            abs(bms['BatCurrent'])*bms['BatVol'],
-                                                            bms['SOCCycleCount']),
-                    style={'font-size':'11px'}),
+                html.Span([
+                        html.I(className=charge_discharge_icon, style={"color": charge_discharge_icon_color}),
+                        html.Span(f" {abs(bms['BatCurrent']):.2f}A/{(abs(bms['BatCurrent'])*bms['BatVol']):.0f}W ({bms['SOCCycleCount']} cycles, {cellVoltageDrift:.3f}v drift)")
+                ], style={'font-size':'13px'}),
                 html.Br(),
                 html.Span(badges+tooltips)
             ])    
@@ -355,7 +362,7 @@ def update_tabs(n):
         tab = dbc.Tab(id=f'tab-{tab_index}',
                       label=period.replace('This',''),
                       active_label_style={"color": "#F39C12"},
-                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '50vw', 'height': '50vh'})]
+                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '50vw', 'height': '45vh'})]
                     )
         tabs.append(tab)
         tab_index += 1
