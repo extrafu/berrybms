@@ -223,7 +223,7 @@ def buildBMSGauge(key, bms):
         elif cellVoltage >= highestCellVoltage:
             highestCellIndex = i
             highestCellVoltage = cellVoltage
-        b = dbc.Badge('{:.3f}v'.format(cellVoltage), color="primary", id=f'{key}-cellVol{i}')
+        b = dbc.Badge(f'{cellVoltage:.3f}v', color="primary", id=f'{key}-cellVol{i}')
         badges.append(b)
         tooltips.append(dbc.Tooltip(f'Cell {i+1}', target=f'{key}-cellVol{i}'))
 
