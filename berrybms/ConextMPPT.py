@@ -50,6 +50,8 @@ class ConextMPPT(ModbusDevice):
         dict[topic_soc] = self.dump()
 
     def formattedOutput(self):
+        pvVoltage = self.getRegister("PVVoltage").value
+        pvCurrent = self.getRegister("PVCurrent").value
         pvPower = self.getRegister("PVPower").value
         dcOutputVoltage = self.getRegister("DCOutputVoltage").value
         dcOutputCurrent = self.getRegister("DCOutputCurrent").value
@@ -64,6 +66,7 @@ class ConextMPPT(ModbusDevice):
             efficiency = 0
 
         s = f"== Conext MPPT (id {self.id}) ==\n"
+        s += f"PV Input Power:\t\t{pvPower}W - {pvVoltage:.2f}v / {pvCurrent:.2f}A\n"
         s += f"DC Output Power:\t{dcOutputPower}W - {dcOutputVoltage:.2f}v / {dcOutputCurrent:.2f}A\n"
         s += f'Efficiency\t\t{efficiency*100}%\n'
         s += f'PV Energy\t\tHour: {energyFromPVThisHour:.2f}Wh\tToday: {energyFromPVToday:.2f}Wh\tWeek: {energyFromPVThisWeek:.2f}Wh\t Month: {energyFromPVThisMonth:.2f}Wh'
