@@ -158,6 +158,8 @@ def buildConextStats():
     removed_battmon_capacity = 0
     remaining_battmon_capacity = 0
     total_battmon_capacity = 0
+    average_mppt_efficiency = 0
+    total_producing_mppt = 0
 
     for key in all_bms.keys():
         bms = all_bms[key]
@@ -184,9 +186,17 @@ def buildConextStats():
             remaining_battmon_capacity += battmon['BatteryCapacityRemaining']
             removed_battmon_capacity += battmon['BatteryCapacityRemoved']
             total_battmon_capacity += battmon['BatteryCapacity']
-
         average_battmon_soc /=  len(all_battmon)
         average_battmon_voltage /= len(all_battmon)
+
+    if (len(all_mppt)):
+        for key in all_mppt.keys():
+            mppt = all_mppt[key]
+            if mppt['DCOutputPower'] > 0:
+                average_mppt_efficiency += mppt['DCOutputPower']/mppt['PVPower']
+                total_producing_mppt += 1
+        if total_producing_mppt > 0:
+           average_mppt_efficiency /= total_producing_mppt
     
     row1 = html.Tr([html.Td("Average SOC (BMS)"), html.Td(f'{average_bms_soc:.2f} % ({lowest_bms_soc} % / {highest_bms_soc} %)')])
     row2 = html.Tr([html.Td("Average SOC (BattMon)"), html.Td(f'{average_battmon_soc:.2f} %')])
@@ -194,13 +204,14 @@ def buildConextStats():
     row4 = html.Tr([html.Td("Average voltage/current (BattMon)"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
     row5 = html.Tr([html.Td("Removed capacity (BMS)"), html.Td(f'{removed_bms_capacity:.1f} Ah ({remaining_bms_capacity:.1f} Ah remaining of {total_bms_capacity:.0f} Ah)')])
     row6 = html.Tr([html.Td("Removed capacity (BattMon)"), html.Td(f'{removed_battmon_capacity:.1f} Ah ({remaining_battmon_capacity:.1f} Ah remaining of {total_battmon_capacity:.0f} Ah)')])
-    table_body_right = [html.Tbody([row1, row2, row3, row4, row5, row6])]
+    row7 = html.Tr([html.Td("Average MPPT efficency"), html.Td(f'{average_mppt_efficiency*100:.0f} %')])
+    table_body_right = [html.Tbody([row1, row2, row3, row4, row5, row6, row7])]
 
     table = dbc.Table(table_body_right, dark=True, striped=True, bordered=False, hover=True, responsive=True, style={'font-size': '11px'})
 
     card = dbc.Card(
         [
-            dbc.CardHeader(children=[html.B("BMS/BattMon Statistics", style={'font-size':'13px'})]),
+            dbc.CardHeader(children=[html.B("BMS/Conext Statistics", style={'font-size':'13px'})]),
             dbc.CardBody([
                 table
             ], style={
