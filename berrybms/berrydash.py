@@ -192,7 +192,7 @@ def buildConextStats():
     if (len(all_mppt)):
         for key in all_mppt.keys():
             mppt = all_mppt[key]
-            if mppt['DCOutputPower'] > 0:
+            if mppt['DCOutputPower'] > 0 and mppt['PVPower'] > 0:
                 average_mppt_efficiency += mppt['DCOutputPower']/mppt['PVPower']
                 total_producing_mppt += 1
         if total_producing_mppt > 0:
