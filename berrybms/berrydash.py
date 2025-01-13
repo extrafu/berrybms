@@ -145,6 +145,8 @@ def buildConextStats():
         return None
 
     average_bms_soc = 0
+    lowest_bms_soc = 100
+    highest_bms_soc = 0
     average_battmon_soc = 0
     average_bms_voltage = 0
     average_bms_current = 0
@@ -159,7 +161,12 @@ def buildConextStats():
 
     for key in all_bms.keys():
         bms = all_bms[key]
-        average_bms_soc += (bms['SOCStateOfcharge'] & 0x0FF)
+        soc = (bms['SOCStateOfcharge'] & 0x0FF)
+        if soc > highest_bms_soc:
+            highest_bms_soc = soc
+        if lowest_bms_soc > soc:
+            lowest_bms_soc = soc
+        average_bms_soc += soc
         average_bms_voltage += bms['BatVol']
         average_bms_current += bms['BatCurrent']
         remaining_bms_capacity += bms['SOCCapRemain']
@@ -181,7 +188,7 @@ def buildConextStats():
         average_battmon_soc /=  len(all_battmon)
         average_battmon_voltage /= len(all_battmon)
     
-    row1 = html.Tr([html.Td("Average SOC (BMS)"), html.Td(f'{average_bms_soc:.2f} %')])
+    row1 = html.Tr([html.Td("Average SOC (BMS)"), html.Td(f'{average_bms_soc:.2f} % ({lowest_bms_soc} % / {highest_bms_soc} %)')])
     row2 = html.Tr([html.Td("Average SOC (BattMon)"), html.Td(f'{average_battmon_soc:.2f} %')])
     row3 = html.Tr([html.Td("Average voltage/current (BMS)"), html.Td(f'{average_bms_voltage:.2f} v / {average_bms_current:.2f} A')])
     row4 = html.Tr([html.Td("Average voltage/current (BattMon)"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
