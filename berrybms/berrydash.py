@@ -204,7 +204,7 @@ def buildConextStats():
     row4 = html.Tr([html.Td("Average voltage/current (BattMon)"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
     row5 = html.Tr([html.Td("Removed capacity (BMS)"), html.Td(f'{removed_bms_capacity:.1f} Ah ({remaining_bms_capacity:.1f} Ah remaining of {total_bms_capacity:.0f} Ah)')])
     row6 = html.Tr([html.Td("Removed capacity (BattMon)"), html.Td(f'{removed_battmon_capacity:.1f} Ah ({remaining_battmon_capacity:.1f} Ah remaining of {total_battmon_capacity:.0f} Ah)')])
-    row7 = html.Tr([html.Td("Average MPPT efficency"), html.Td(f'{average_mppt_efficiency*100:.0f} %')])
+    row7 = html.Tr([html.Td("Average MPPT efficiency"), html.Td(f'{average_mppt_efficiency*100:.0f} %')])
     table_body_right = [html.Tbody([row1, row2, row3, row4, row5, row6, row7])]
 
     table = dbc.Table(table_body_right, dark=True, striped=True, bordered=False, hover=True, responsive=True, style={'font-size': '11px'})
