@@ -68,6 +68,6 @@ class ConextMPPT(ModbusDevice):
         s = f"== Conext MPPT (id {self.id}) ==\n"
         s += f"PV Input Power:\t\t{pvPower}W - {pvVoltage:.2f}v / {pvCurrent:.2f}A\n"
         s += f"DC Output Power:\t{dcOutputPower}W - {dcOutputVoltage:.2f}v / {dcOutputCurrent:.2f}A\n"
-        s += f'Efficiency\t\t{efficiency*100}%\n'
+        s += f'Efficiency\t\t{efficiency*100:.2f}%\n'
         s += f'PV Energy\t\tHour: {energyFromPVThisHour:.2f}Wh\tToday: {energyFromPVToday:.2f}Wh\tWeek: {energyFromPVThisWeek:.2f}Wh\t Month: {energyFromPVThisMonth:.2f}Wh'
         return s

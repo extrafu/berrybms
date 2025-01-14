@@ -53,7 +53,7 @@ class ConextBattMon(ModbusDevice):
         
         s = f"== Conext BattMon (id {self.id}) ==\n"
         s += f"Capacity:\t\t{capacityRemaining}Ah of {capacity}Ah ({capacityRemoved}Ah removed)\n"
-        s += f"Active Power:\t\t{voltage:.2f}v / {current}A\n"
+        s += f"Active Power:\t\t{voltage:.2f}v / {current:.2f}A\n"
         s += f'SOC:\t\t\t{soc}%'
 
         return s
