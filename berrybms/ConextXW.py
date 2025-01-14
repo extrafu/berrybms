@@ -75,10 +75,15 @@ class ConextXW(ModbusDevice):
         gridACInputPower = self.getRegister("GridACInputPower").value
         generatorACPowerApparent = self.getRegister("GeneratorACPowerApparent").value
         chargeDCPower = self.getRegister("ChargeDCPower").value
+        efficiency = 0
+
+        if gridACInputPower > 0 or generatorACPowerApparent > 0:
+            efficiency = chargeDCPower/(gridACInputPower+generatorACPowerApparent-loadACPowerApparent)
 
         s = f"== Conext XW (id {self.id}) ==\n"
         s += f"Active Power:\t\t{loadACPowerApparent:.2f}W\n"
         s += f'Input Power\t\tGrid: {gridACInputPower}W\tGenerator: {generatorACPowerApparent}W\n'
-        s += f"Charge DC Power:\t{chargeDCPower:.2f}W"
+        s += f"Charge DC Power:\t{chargeDCPower:.2f}W\n"
+        s += f'Efficiency\t\t{efficiency*100:.2f}%'
 
         return s

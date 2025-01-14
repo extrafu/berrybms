@@ -160,6 +160,8 @@ def buildConextStats():
     total_battmon_capacity = 0
     average_mppt_efficiency = 0
     total_producing_mppt = 0
+    average_xw_efficiency = 0
+    total_producing_xw = 0
 
     for key in all_bms.keys():
         bms = all_bms[key]
@@ -197,14 +199,23 @@ def buildConextStats():
                 total_producing_mppt += 1
         if total_producing_mppt > 0:
            average_mppt_efficiency /= total_producing_mppt
-    
+
+    if (len(all_xw)):
+        for key in all_xw.keys():
+            xw = all_xw[key]
+            if xw['GridACInputPower'] > 0 or xw['GeneratorACPowerApparent'] > 0:
+                average_xw_efficiency = xw['ChargeDCPower']/(xw['GridACInputPower']+xw['GeneratorACPowerApparent']-xw['LoadACPowerApparent'])
+                total_producing_xw += 1
+        if total_producing_xw > 0:
+            average_xw_efficiency /= total_producing_xw
+
     row1 = html.Tr([html.Td("Average SOC (BMS)"), html.Td(f'{average_bms_soc:.2f} % ({lowest_bms_soc} % / {highest_bms_soc} %)')])
     row2 = html.Tr([html.Td("Average SOC (BattMon)"), html.Td(f'{average_battmon_soc:.2f} %')])
     row3 = html.Tr([html.Td("Average voltage/current (BMS)"), html.Td(f'{average_bms_voltage:.2f} v / {average_bms_current:.2f} A')])
     row4 = html.Tr([html.Td("Average voltage/current (BattMon)"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
     row5 = html.Tr([html.Td("Removed capacity (BMS)"), html.Td(f'{removed_bms_capacity:.1f} Ah ({remaining_bms_capacity:.1f} Ah remaining of {total_bms_capacity:.0f} Ah)')])
     row6 = html.Tr([html.Td("Removed capacity (BattMon)"), html.Td(f'{removed_battmon_capacity:.1f} Ah ({remaining_battmon_capacity:.1f} Ah remaining of {total_battmon_capacity:.0f} Ah)')])
-    row7 = html.Tr([html.Td("Average MPPT efficiency"), html.Td(f'{average_mppt_efficiency*100:.0f} %')])
+    row7 = html.Tr([html.Td("Average MPPT / XW charge efficiency"), html.Td(f'{average_mppt_efficiency*100:.2f} % / {average_xw_efficiency*100:.2f} %')])
     table_body_right = [html.Tbody([row1, row2, row3, row4, row5, row6, row7])]
 
     table = dbc.Table(table_body_right, dark=True, striped=True, bordered=False, hover=True, responsive=True, style={'font-size': '11px'})

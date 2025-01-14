@@ -60,10 +60,10 @@ class ConextMPPT(ModbusDevice):
         energyFromPVToday = self.getRegister("EnergyFromPVToday").value
         energyFromPVThisWeek = self.getRegister("EnergyFromPVThisWeek").value
         energyFromPVThisMonth = self.getRegister("EnergyFromPVThisMonth").value
+        efficiency = 0
+
         if dcOutputPower > 0 and pvPower > 0:
             efficiency = dcOutputPower/pvPower
-        else:
-            efficiency = 0
 
         s = f"== Conext MPPT (id {self.id}) ==\n"
         s += f"PV Input Power:\t\t{pvPower}W - {pvVoltage:.2f}v / {pvCurrent:.2f}A\n"
