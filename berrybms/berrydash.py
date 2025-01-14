@@ -289,7 +289,7 @@ def buildBMSGauge(key, bms):
                     size=200,
                     units=f"{bms['SOCCapRemain']:.2f} Ah of {bms['SOCFullChargeCap']:.0f}",
                     style={'display': 'block', 'margin-bottom': -80, 'margin-top': -30}, 
-                    value=bms['SOCStateOfcharge'],
+                    value=(bms['SOCStateOfcharge'] & 0x0FF),
                     digits=0   # available after 0.5, see https://github.com/plotly/dash-daq/pull/117/files
                 ),
                 html.Span([
