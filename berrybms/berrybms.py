@@ -11,21 +11,24 @@
 #
 import sys
 import time
-import yaml
+import yaml # type: ignore
 import logging
 import json
 import signal
+import threading
 
-import paho.mqtt.client as paho
+import paho.mqtt.client as paho # type: ignore
 
 from ConextAGS import ConextAGS
 from ConextInsightHome import ConextInsightHome
 from JKBMS import JKBMS
+from JKBMSSniffer import JKBMSSniffer
 from Register import Register
 
 # Global variables to enable cleanups in signal handler
 all_modbus_devices = []
 paho_client = None
+jkbms_sniffer = None
 
 def cleanup(_signo, _stack_frame):
     print("Cleaning up before being terminated!")
@@ -39,17 +42,17 @@ def cleanup(_signo, _stack_frame):
     sys.exit(0)
 
 def main(daemon):
-    # setup the signal handler
+    # Setup the signal handler
     signal.signal(signal.SIGTERM, cleanup)
 
-    # load yaml config
+    # Load the YAML configuration file
     f = open("config.yaml","r")
     config = yaml.load(f, Loader=yaml.SafeLoader)
 
     while True:
-        # Connect to MQTT server. We do it each time since it's not costly
+        # Connect to the MQTT server. We do it each time since it's not costly
         # and avoids long keepalive if the updateinterval is set to a high value.
-        global paho_client
+        global paho_client, jkbms_sniffer
         paho_client = paho.Client()
         try:
             paho_client.connect(config['mqtt']['host'], int(config['mqtt']['port']), 60)
@@ -59,7 +62,7 @@ def main(daemon):
 
         global all_modbus_devices
         all_devices = {}
-        all_bms = config['bms']
+        all_bms = config.get('bms', dict())
 
         average_voltage = 0
         average_soc = 0
@@ -71,40 +74,48 @@ def main(daemon):
         lowest_soc = 100
         lowest_id = 0
 
-        if all_bms != None:
-            for key in all_bms.keys():
-                bms = all_bms[key]
-                bms_id = bms['id']
-                bms_port = bms['port']
+        for key in all_bms.keys():
+            bms = all_bms[key]
+            bms_port = bms['port']
 
-                jkbms = JKBMS(key, bms_id, bms_port)
-                c = jkbms.connect()
+            if key == "jk_sniffer":
+                if jkbms_sniffer == None:
+                    jkbms_sniffer = JKBMSSniffer(config)
+                    t = threading.Thread(target=jkbms_sniffer.sniff, daemon=True)
+                    t.start()
+                    print("Started JKBMS sniffer thread!")
+                continue
 
-                if c == None:
-                    continue
+            bms_id = bms['id']
 
-                #print(jkbms)
-                print(jkbms.formattedOutput(), '\n')
+            jkbms = JKBMS(key, bms_id, bms_port)
+            c = jkbms.connect()
 
-                all_modbus_devices.append(jkbms)
-                active_bms += 1
+            if c == None:
+                continue
 
-                soc = jkbms.getRegister('SOCStateOfcharge').value & 0x0FF
-                average_soc += soc;
+            #print(jkbms)
+            print(jkbms.formattedOutput(),'\n')
 
-                # We adjust the lowest/highest SOC
-                if soc > highest_soc:
-                    highest_soc = soc
-                    highest_id = bms_id
-                if lowest_soc > soc:
-                    lowest_soc = soc
-                    lowest_id = bms_id
+            all_modbus_devices.append(jkbms)
+            active_bms += 1
 
-                average_voltage += jkbms.getRegister('BatVol').value
-                total_used_capacity += (jkbms.getRegister('SOCFullChargeCap').value - jkbms.getRegister('SOCCapRemain').value)
+            soc = jkbms.getRegister('SOCStateOfcharge').value & 0x0FF
+            average_soc += soc;
 
-                # Publish all BMS values in MQTT
-                jkbms.publish(all_devices)
+            # We adjust the lowest/highest SOC
+            if soc > highest_soc:
+                highest_soc = soc
+                highest_id = bms_id
+            if lowest_soc > soc:
+                lowest_soc = soc
+                lowest_id = bms_id
+
+            average_voltage += jkbms.getRegister('BatVol').value
+            total_used_capacity += (jkbms.getRegister('SOCFullChargeCap').value - jkbms.getRegister('SOCCapRemain').value)
+
+            # Publish all BMS values in MQTT
+            jkbms.publish(all_devices)
 
         if config['insighthome'] != None:
             conext = ConextInsightHome(config['insighthome']['host'], config['insighthome']['port'], config['insighthome'].get('ids', None))
@@ -114,7 +125,8 @@ def main(daemon):
             for device in devices:
                 device.publish(all_devices)
                 #print("%s: %s\n" % (type(device).__name__, device))
-                print(device.formattedOutput(), '\n')
+                #device.dump()
+                print(device.formattedOutput(),'\n')
 
         # Publish all values in MQTT
         if paho_client != None:
@@ -126,14 +138,15 @@ def main(daemon):
             device.disconnect()
         all_modbus_devices = []
 
-        print("== Global BMS Statistics ==")
-        average_voltage = average_voltage/active_bms
-        average_soc = average_soc/active_bms
+        if active_bms > 0:
+            print("== Global BMS Statistics ==")
+            average_voltage = average_voltage/active_bms
+            average_soc = average_soc/active_bms
 
-        print(f"Average Voltage:\t{average_voltage:.2f}v")
-        print(f"Average SOC:\t\t{average_soc:.1f}%")
-        print(f"Total Used Capacity:\t{total_used_capacity:.2f} Ah (~ {(total_used_capacity*average_voltage/1000):.2f} KWh)")
-        print(f"Lowest SOC:\t\t{lowest_id} ({lowest_soc}%)  Highest: {highest_id} ({highest_soc}%)")
+            print(f"Average Voltage:\t{average_voltage:.2f}v")
+            print(f"Average SOC:\t\t{average_soc:.1f}%")
+            print(f"Total Used Capacity:\t{total_used_capacity:.2f} Ah (~ {(total_used_capacity*average_voltage/1000):.2f} KWh)")
+            print(f"Lowest SOC:\t\t{lowest_id} ({lowest_soc}%)  Highest: {highest_id} ({highest_soc}%)")
 
         if daemon:
             updateinterval = config.get('updateinterval')

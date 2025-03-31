@@ -8,8 +8,8 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-import pymodbus.client as ModbusClient
-from pymodbus.client.mixin import ModbusClientMixin
+import pymodbus.client as ModbusClient # type: ignore
+from pymodbus.client.mixin import ModbusClientMixin # type: ignore
 import json
 
 from ModbusDevice import ModbusDevice
@@ -19,62 +19,72 @@ class ConextXW(ModbusDevice):
 
     def __init__(self,
                 id,
-                connection):
+                connection=None):
         super().__init__(id)
         self.connection = connection
+        self.values = {}
 
-        self.registers = [
-            Register(self.id, "EnergyFromBatteryThisHour", 0x00D0, ModbusClientMixin.DATATYPE.UINT32, 0.001), # looks like what goes INTO the battery from AC1/AC2
-            Register(self.id, "EnergyFromBatteryToday", 0x00D4, ModbusClientMixin.DATATYPE.UINT32, 0.001),    # looks like what goes INTO the battery from AC1/AC2
-            Register(self.id, "BatteryDischargeActiveToday", 0x00D6, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "EnergyFromBatteryThisWeek", 0x00D8, ModbusClientMixin.DATATYPE.UINT32, 0.001), # looks like what goes INTO the battery from AC1/AC2
-            Register(self.id, "EnergyFromBatteryThisMonth", 0x00DC, ModbusClientMixin.DATATYPE.UINT32, 0.001),# looks like what goes INTO the battery from AC1/AC2 
-            Register(self.id, "EnergyToBatteryThisHour", 0x00E8, ModbusClientMixin.DATATYPE.UINT32, 0.001),   # looks like what we PULL from the battery
-            Register(self.id, "EnergyToBatteryToday", 0x00EC, ModbusClientMixin.DATATYPE.UINT32, 0.001),      # looks like what we PULL from the battery
-            Register(self.id, "BatteryChargeActiveToday", 0x00EE, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "EnergyToBatteryThisWeek", 0x00F0, ModbusClientMixin.DATATYPE.UINT32, 0.001),   # looks like what we PULL from the battery
-            Register(self.id, "EnergyToBatteryThisMonth", 0x00F4, ModbusClientMixin.DATATYPE.UINT32, 0.001),  # looks like what we PULL from the battery
-            Register(self.id, "LoadOutputEnergyThisHour", 0x0130, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "LoadOutputEnergyToday", 0x0134, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "LoadOutputEnergyThisWeek", 0x0138, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "LoadOutputEnergyThisMonth", 0x013C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatteryVoltage", 0x0050, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatteryCurrent", 0x0052, ModbusClientMixin.DATATYPE.INT32, 0.001),
-            Register(self.id, "BatteryPower", 0x0054, ModbusClientMixin.DATATYPE.INT32),
-            Register(self.id, "ChargeDCCurrent", 0x005C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "ChargeDCPower", 0x005E, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "ChargeDCPowerPercentage", 0x0060, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "GridACInputPower", 0x006C, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "GridOutputPowerW", 0x0084, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "GridOutputPowerVA", 0x008A, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "GeneratorACPower", 0x00AC, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "GeneratorACPowerApparent", 0x00BA, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "LoadACPowerW", 0x009A, ModbusClientMixin.DATATYPE.UINT32),                     # equals to LoadACPowerApparent
-            Register(self.id, "LoadACPowerApparent", 0x00A0, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "GridInputEnergyThisHour", 0x0100, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GridInputEnergyToday", 0x0104, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GridInputActiveToday", 0x0106, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "GridInputEnergyThisWeek", 0x0108, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GridInputEnergyThisMonth", 0x010C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GeneratorInputEnergyThisHour", 0x0148, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GeneratorInputEnergyToday", 0x014C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GeneratorInputActiveToday", 0x014E, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "GeneratorInputEnergyThisWeek", 0x0150, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "GeneratorInputEnergyThisMonth", 0x0154, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-        ]
+        if self.connection != None:
+            self.registers = [
+                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                #Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),  # Generates an exception!?!
+                Register(self, "EnergyFromBatteryThisHour", 0x00D0, ModbusClientMixin.DATATYPE.UINT32, 0.001), # looks like what goes INTO the battery from AC1/AC2
+                Register(self, "EnergyFromBatteryToday", 0x00D4, ModbusClientMixin.DATATYPE.UINT32, 0.001),    # looks like what goes INTO the battery from AC1/AC2
+                Register(self, "BatteryDischargeActiveToday", 0x00D6, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "EnergyFromBatteryThisWeek", 0x00D8, ModbusClientMixin.DATATYPE.UINT32, 0.001), # looks like what goes INTO the battery from AC1/AC2
+                Register(self, "EnergyFromBatteryThisMonth", 0x00DC, ModbusClientMixin.DATATYPE.UINT32, 0.001),# looks like what goes INTO the battery from AC1/AC2 
+                Register(self, "EnergyToBatteryThisHour", 0x00E8, ModbusClientMixin.DATATYPE.UINT32, 0.001),   # looks like what we PULL from the battery
+                Register(self, "EnergyToBatteryToday", 0x00EC, ModbusClientMixin.DATATYPE.UINT32, 0.001),      # looks like what we PULL from the battery
+                Register(self, "BatteryChargeActiveToday", 0x00EE, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "EnergyToBatteryThisWeek", 0x00F0, ModbusClientMixin.DATATYPE.UINT32, 0.001),   # looks like what we PULL from the battery
+                Register(self, "EnergyToBatteryThisMonth", 0x00F4, ModbusClientMixin.DATATYPE.UINT32, 0.001),  # looks like what we PULL from the battery
+                Register(self, "LoadOutputEnergyThisHour", 0x0130, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "LoadOutputEnergyToday", 0x0134, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "LoadOutputEnergyThisWeek", 0x0138, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "LoadOutputEnergyThisMonth", 0x013C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatteryVoltage", 0x0050, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatteryCurrent", 0x0052, ModbusClientMixin.DATATYPE.INT32, 0.001),
+                Register(self, "BatteryPower", 0x0054, ModbusClientMixin.DATATYPE.INT32),
+                Register(self, "ChargeDCCurrent", 0x005C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "ChargeDCPower", 0x005E, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "ChargeDCPowerPercentage", 0x0060, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "GridACInputPower", 0x006C, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "GridOutputPowerW", 0x0084, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "GridOutputPowerVA", 0x008A, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "GeneratorACPower", 0x00AC, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "GeneratorACPowerApparent", 0x00BA, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "LoadACPowerW", 0x009A, ModbusClientMixin.DATATYPE.UINT32),                     # equals to LoadACPowerApparent
+                Register(self, "LoadACPowerApparent", 0x00A0, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "GridInputEnergyThisHour", 0x0100, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GridInputEnergyToday", 0x0104, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GridInputActiveToday", 0x0106, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "GridInputEnergyThisWeek", 0x0108, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GridInputEnergyThisMonth", 0x010C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GeneratorInputEnergyThisHour", 0x0148, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GeneratorInputEnergyToday", 0x014C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GeneratorInputActiveToday", 0x014E, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "GeneratorInputEnergyThisWeek", 0x0150, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "GeneratorInputEnergyThisMonth", 0x0154, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+            ]
 
     def disconnect(self):
-        return None
+        pass
 
     def publish(self, dict):
         topic_soc = "xw-%d" % self.id
-        dict[topic_soc] = self.dump()
+
+        if self.registers != None:
+            self.values.update(self.dump())
+        dict[topic_soc] = self.values
 
     def formattedOutput(self):
-        loadACPowerApparent = self.getRegister("LoadACPowerApparent").value
-        gridACInputPower = self.getRegister("GridACInputPower").value
-        generatorACPowerApparent = self.getRegister("GeneratorACPowerApparent").value
-        chargeDCPower = self.getRegister("ChargeDCPower").value
+        if self.registers != None:
+            self.values.update(self.dump())
+
+        loadACPowerApparent = self.values.get("LoadACPowerApparent",0)
+        gridACInputPower = self.values.get("GridACInputPower",0)
+        generatorACPowerApparent = self.values.get("GeneratorACPowerApparent",0)
+        chargeDCPower = self.values.get("ChargeDCPower",0)
         efficiency = 0
 
         if gridACInputPower > 0 or generatorACPowerApparent > 0:

@@ -15,14 +15,12 @@ class ModbusDevice(object):
     def __init__(self, id):
         self.id = id
         self.connection = None
+        self.registers = None
 
     def disconnect(self):
         if self.connection != None:
             #print("Closing connnection...")
             self.connection.close()
-
-    def getAllRegisters(self):
-        return self.registers
 
     # Return the initialized value of a register
     def getRegister(self, name):
@@ -30,6 +28,13 @@ class ModbusDevice(object):
             if name == register.name:
                 register.getValue(self.connection)
                 return register
+        return None
+    
+        # Return the initialized value of a register
+    def getRegisterValue(self, name):
+        for register in self.registers:
+            if name == register.name:
+                return register.getValue(self.connection)
         return None
 
     def dump(self):

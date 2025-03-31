@@ -8,7 +8,7 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-from pymodbus.client.mixin import ModbusClientMixin
+from pymodbus.client.mixin import ModbusClientMixin # type: ignore
 
 import json
 
@@ -19,41 +19,45 @@ class ConextBattMon(ModbusDevice):
 
     def __init__(self,
                 id,
-                connection):
+                connection=None):
         super().__init__(id)
         self.connection = connection
 
-        self.registers = [
-            Register(self.id, "BatteryVoltage", 0x0046, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatteryCapacity", 0x0092, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "BatteryCapacityRemaining", 0x0058, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "BatteryCapacityRemoved", 0x005A, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "BatteryCurrent", 0x0048, ModbusClientMixin.DATATYPE.INT32, 0.001),
-            Register(self.id, "BatteryMidpoint1Voltage", 0x0052, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatteryMidpoint2Voltage", 0x0054, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatteryMidpoint3Voltage", 0x0056, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "BatterySOC", 0x004C, ModbusClientMixin.DATATYPE.UINT32),
-            #Register(self.id, "BatteryStateOfHealth", 0x004E, DataType.UINT32)       # useless, returns 0
-        ]
+        self.values = {}
+
+        if self.connection != None:
+            self.registers = [
+                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "BatteryVoltage", 0x0046, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatteryCapacity", 0x0092, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "BatteryCapacityRemaining", 0x0058, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "BatteryCapacityRemoved", 0x005A, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "BatteryCurrent", 0x0048, ModbusClientMixin.DATATYPE.INT32, 0.001),
+                Register(self, "BatteryMidpoint1Voltage", 0x0052, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatteryMidpoint2Voltage", 0x0054, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatteryMidpoint3Voltage", 0x0056, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "BatterySOC", 0x004C, ModbusClientMixin.DATATYPE.UINT32),
+                #Register(self, "BatteryStateOfHealth", 0x004E, DataType.UINT32)       # useless, returns 0
+            ]
 
     def disconnect(self):
-        return None
+        pass
 
     def publish(self, dict):
         topic_soc = "battmon-%d" % self.id
-        dict[topic_soc] = self.dump()
+
+        if self.registers != None:
+            self.values.update(self.dump())
+        dict[topic_soc] = self.values
     
     def formattedOutput(self):
-        voltage = self.getRegister("BatteryVoltage").value
-        capacity = self.getRegister("BatteryCapacity").value
-        capacityRemaining = self.getRegister("BatteryCapacityRemaining").value
-        capacityRemoved = self.getRegister("BatteryCapacityRemoved").value
-        current = self.getRegister("BatteryCurrent").value
-        soc = self.getRegister("BatterySOC").value
+        if self.registers != None:
+            self.values.update(self.dump())
         
-        s = f"== Conext BattMon (id {self.id}) ==\n"
-        s += f"Capacity:\t\t{capacityRemaining}Ah of {capacity}Ah ({capacityRemoved}Ah removed)\n"
-        s += f"Active Power:\t\t{voltage:.2f}v / {current:.2f}A\n"
-        s += f'SOC:\t\t\t{soc}%'
+        s = f'== Conext BattMon (id {self.id}) ==\n'
+        s += f'Capacity:\t\t{self.values.get("BatteryCapacityRemaining",0)}Ah of {self.values.get("BatteryCapacity",0)}Ah ({self.values.get("BatteryCapacityRemoved",0)}Ah removed)\n'
+        s += f'Active Power:\t\t{self.values.get("BatteryVoltage",0):.2f}v / {self.values.get("BatteryCurrent",0):.2f}A\n'
+        s += f'SOC:\t\t\t{self.values.get("BatterySOC",0)}%'
 
         return s

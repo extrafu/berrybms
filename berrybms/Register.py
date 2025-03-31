@@ -8,17 +8,17 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-import pymodbus.client as ModbusClient
-from pymodbus.client.mixin import ModbusClientMixin
+import pymodbus.client as ModbusClient # type: ignore
+from pymodbus.client.mixin import ModbusClientMixin # type: ignore
 
-import pymodbus.exceptions
-import pymodbus.payload
+import pymodbus.exceptions # type: ignore
+import pymodbus.payload # type: ignore
 import time
 
 class Register(object):
 
     def __init__(self,
-            id, 
+            device,
             name,
             address,
             type,
@@ -26,21 +26,22 @@ class Register(object):
             length=0
             ):
         
-        self.id = id
+        self.id = device.id
+        self.values = device.values
         self.name = name
         self.address = address
         self.type = type
         self.scale = scale
         self.length = length
-        self.value = None
+        self.values[name] = None
 
     def getValue(self, c, reload=False):
 
         if reload == True:
-            self.value = None
+            self.values[self.name] = None
 
-        if self.value != None:
-            return self.value
+        if self.values[self.name] != None:
+            return self.values[self.name]
         
         use_scale = True
         if self.type == ModbusClientMixin.DATATYPE.STRING:
@@ -54,16 +55,17 @@ class Register(object):
         if not isinstance(recv, pymodbus.pdu.register_message.ReadHoldingRegistersResponse):
             return None
 
-        self.value = c.convert_from_registers(recv.registers, data_type=self.type)
+        self.values[self.name] = c.convert_from_registers(recv.registers, data_type=self.type)
         if use_scale:
-            self.value = self.value * self.scale
+            self.values[self.name] = self.values[self.name] * self.scale
   
         time.sleep(0.05)
 
-        return self.value
+        return self.values[self.name]
 
     def setValue(self, c, value):
 
+        self.values[self.name] = value
         raw_value = c.convert_to_registers(value, self.type)
         r = c.write_registers(self.address, raw_value, slave=self.id)
         time.sleep(0.05)

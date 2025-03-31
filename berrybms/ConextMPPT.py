@@ -8,7 +8,7 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-from pymodbus.client.mixin import ModbusClientMixin
+from pymodbus.client.mixin import ModbusClientMixin # type: ignore
 
 import json
 
@@ -19,55 +19,59 @@ class ConextMPPT(ModbusDevice):
 
     def __init__(self,
                 id,
-                connection):
+                connection=None):
         super().__init__(id)
         self.connection = connection
+        self.values = {}
 
-        self.registers = [
-            Register(self.id, "PVVoltage", 0x004C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "PVCurrent", 0x004E, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "PVPower", 0x0050, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "DCOutputVoltage", 0x0058, ModbusClientMixin.DATATYPE.INT32, 0.001),
-            Register(self.id, "DCOutputCurrent", 0x005A, ModbusClientMixin.DATATYPE.INT32, 0.001),
-            Register(self.id, "DCOutputPower", 0x005C, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "EnergyFromPVThisHour", 0x0070, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyFromPVToday", 0x0074, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "PVInputActiveToday", 0x0076, ModbusClientMixin.DATATYPE.UINT32),
-            Register(self.id, "EnergyFromPVThisWeek", 0x0078, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyFromPVThisMonth", 0x007C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyFromPVThisYear", 0x0080, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyToBatteryThisHour", 0x0088, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyToBatteryToday", 0x008C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyToBatteryThisWeek", 0x0090, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-            Register(self.id, "EnergyToBatteryThisMonth", 0x0094, ModbusClientMixin.DATATYPE.UINT32, 0.001),
-        ]
+        if self.connection != None:
+            self.registers = [
+                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "PVVoltage", 0x004C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "PVCurrent", 0x004E, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "PVPower", 0x0050, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "DCOutputVoltage", 0x0058, ModbusClientMixin.DATATYPE.INT32, 0.001),
+                Register(self, "DCOutputCurrent", 0x005A, ModbusClientMixin.DATATYPE.INT32, 0.001),
+                Register(self, "DCOutputPower", 0x005C, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "EnergyFromPVThisHour", 0x0070, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyFromPVToday", 0x0074, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "PVInputActiveToday", 0x0076, ModbusClientMixin.DATATYPE.UINT32),
+                Register(self, "EnergyFromPVThisWeek", 0x0078, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyFromPVThisMonth", 0x007C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyFromPVThisYear", 0x0080, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryThisHour", 0x0088, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryToday", 0x008C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryThisWeek", 0x0090, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryThisMonth", 0x0094, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryThisYear", 0x0098, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+                Register(self, "EnergyToBatteryLifetime", 0x009c, ModbusClientMixin.DATATYPE.UINT32, 0.001),
+            ]
 
     def disconnect(self):
-        return None
+        pass
 
     def publish(self, dict):
         topic_soc = "mppt-%d" % self.id
-        dict[topic_soc] = self.dump()
+
+        if self.registers != None:
+            self.values.update(self.dump())
+        dict[topic_soc] = self.values
 
     def formattedOutput(self):
-        pvVoltage = self.getRegister("PVVoltage").value
-        pvCurrent = self.getRegister("PVCurrent").value
-        pvPower = self.getRegister("PVPower").value
-        dcOutputVoltage = self.getRegister("DCOutputVoltage").value
-        dcOutputCurrent = self.getRegister("DCOutputCurrent").value
-        dcOutputPower = self.getRegister("DCOutputPower").value
-        energyFromPVThisHour = self.getRegister("EnergyFromPVThisHour").value
-        energyFromPVToday = self.getRegister("EnergyFromPVToday").value
-        energyFromPVThisWeek = self.getRegister("EnergyFromPVThisWeek").value
-        energyFromPVThisMonth = self.getRegister("EnergyFromPVThisMonth").value
+        if self.registers != None:
+            self.values.update(self.dump())
+
+        pvPower = self.values.get("PVPower",0)
+        dcOutputPower = self.values.get("DCOutputPower",0)
         efficiency = 0
 
         if dcOutputPower > 0 and pvPower > 0:
             efficiency = dcOutputPower/pvPower
 
-        s = f"== Conext MPPT (id {self.id}) ==\n"
-        s += f"PV Input Power:\t\t{pvPower}W - {pvVoltage:.2f}v / {pvCurrent:.2f}A\n"
-        s += f"DC Output Power:\t{dcOutputPower}W - {dcOutputVoltage:.2f}v / {dcOutputCurrent:.2f}A\n"
+        s = f'== Conext MPPT (id {self.id}) ==\n'
+        s += f'PV Input Power:\t\t{pvPower}W - {self.values.get("PVVoltage",0):.2f}v / {self.values.get("PVCurrent",0):.2f}A\n'
+        s += f'DC Output Power:\t{dcOutputPower}W - {self.values.get("DCOutputVoltage",0):.2f}v / {self.values.get("DCOutputCurrent",0):.2f}A\n'
         s += f'Efficiency\t\t{efficiency*100:.2f}%\n'
-        s += f'PV Energy\t\tHour: {energyFromPVThisHour:.2f}Wh\tToday: {energyFromPVToday:.2f}Wh\tWeek: {energyFromPVThisWeek:.2f}Wh\t Month: {energyFromPVThisMonth:.2f}Wh'
+        s += f'PV Energy\t\tHour: {self.values.get("EnergyFromPVThisHour",0):.2f}Wh\tToday: {self.values.get("EnergyFromPVToday",0):.2f}Wh\tWeek: {self.values.get("EnergyFromPVThisWeek",0):.2f}Wh\t Month: {self.values.get("EnergyFromPVThisMonth",0):.2f}Wh'
         return s

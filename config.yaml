@@ -1,23 +1,26 @@
 # JK BMS configuration
-# You can name them however you want, but you
-# must set the correct modbus ID and serial port to use
+# Each BMS must have a nice which can be anything except "jk_sniffer"
+# You must set the correct modbus ID and serial port to use
 # to communicate with each individual BMS.
 bms:
-   jk1:
-     id: 0
-     port: "/dev/ttyACM0"
-
-   jk2:
-     id: 1
-     port: "/dev/ttyACM1"
-
-   jk3:
-     id: 2
-     port: "/dev/ttyACM2"
-
-   jk4:
-     id: 3
-     port: "/dev/ttyACM3"
+  # jk0:
+  #   id: 0
+  #   port: "/dev/ttyACM0"
+  #
+  # jk1:
+  #   id: 1
+  #   port: "/dev/ttyACM1"
+  #
+  # jk2:
+  #   id: 2
+  #   port: "/dev/ttyACM2"
+  #
+  # jk3:
+  #   id: 3
+  #   port: "/dev/ttyACM3"
+  #
+  jk_sniffer:
+    port: "/dev/ttyUSB0"
 
 # Conext InsightHome configuration.
 # ids is optional, but will make things faster and allows you to skip modbus devices
@@ -26,7 +29,7 @@ insighthome:
   port: 503
   ids: [10,50,170,171,190]
 
-# If you want to push data in MQTT (for the GUI part, Node-RED, etc.)
+# If you want to push data in MQTT (for the GUI part of BerryBMS, Node-RED, etc.)
 # you must set the host/port where to push it. You can use the default
 # settings with a locally installed mosquitto MQTT server.
 mqtt:

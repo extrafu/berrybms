@@ -8,7 +8,7 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-from pymodbus.client.mixin import ModbusClientMixin
+from pymodbus.client.mixin import ModbusClientMixin # type: ignore
 from ModbusDevice import ModbusDevice
 from Register import Register
 from enum import Enum
@@ -23,19 +23,25 @@ class ConextAGS(ModbusDevice):
 
     def __init__(self,
                 id,
-                connection):
+                connection=None):
         super().__init__(id)
         self.connection = connection
-        self.registers = [
-            Register(self.id, "GeneratorMode", 0x004D, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "GeneratorAutoStartOnBatterySOC", 0x0055, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "GeneratorAutoStopOnBatterySOC", 0x0056, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "SOCLevelStopGenerator", 0x0087, ModbusClientMixin.DATATYPE.UINT16),
-            Register(self.id, "SOCLevelStartGenerator", 0x0088, ModbusClientMixin.DATATYPE.UINT16)
-        ]
+        self.values = {}
+
+        if self.connection != None:
+            self.registers = [
+                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                #Register(self, "UniqueIDNumber", 0x0014, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
+                Register(self, "GeneratorMode", 0x004D, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "GeneratorAutoStartOnBatterySOC", 0x0055, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "GeneratorAutoStopOnBatterySOC", 0x0056, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "SOCLevelStopGenerator", 0x0087, ModbusClientMixin.DATATYPE.UINT16),
+                Register(self, "SOCLevelStartGenerator", 0x0088, ModbusClientMixin.DATATYPE.UINT16)
+            ]
 
     def disconnect(self):
-        return None
+        pass
 
     # 0=Off
     # 1=On
@@ -50,12 +56,15 @@ class ConextAGS(ModbusDevice):
             register.setValue(self.connection, mode)
 
     def publish(self, c):
-       return None
+       pass
     
     def formattedOutput(self):
-        generatorMode = self.getRegister("GeneratorMode").value
-        socLevelStopGenerator = self.getRegister("SOCLevelStopGenerator").value
-        socLevelStartGenerator = self.getRegister("SOCLevelStartGenerator").value
+        if self.registers != None:
+            self.values.update(self.dump())
+
+        generatorMode = self.values.get("GeneratorMode")
+        socLevelStopGenerator = self.values.get("SOCLevelStopGenerator",0)
+        socLevelStartGenerator = self.values.get("SOCLevelStartGenerator",0)
 
         s = f"== Conext AGS (id {self.id}) ==\n"
         s += f"Generator Mode:\t\t{generatorMode}\n"
