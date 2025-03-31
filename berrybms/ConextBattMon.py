@@ -23,8 +23,6 @@ class ConextBattMon(ModbusDevice):
         super().__init__(id)
         self.connection = connection
 
-        self.values = {}
-
         if self.connection != None:
             self.registers = [
                 Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),

@@ -25,7 +25,6 @@ class JKBMS(ModbusDevice):
         super().__init__(id)
         self.name = name
         self.port = port
-        self.values = {}
         self.cellVoltages = None
     
     def connect(self):

@@ -22,7 +22,6 @@ class ConextXW(ModbusDevice):
                 connection=None):
         super().__init__(id)
         self.connection = connection
-        self.values = {}
 
         if self.connection != None:
             self.registers = [
@@ -44,7 +43,6 @@ class ConextXW(ModbusDevice):
                 Register(self, "LoadOutputEnergyThisMonth", 0x013C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "BatteryVoltage", 0x0050, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "BatteryCurrent", 0x0052, ModbusClientMixin.DATATYPE.INT32, 0.001),
-                Register(self, "BatteryPower", 0x0054, ModbusClientMixin.DATATYPE.INT32),
                 Register(self, "ChargeDCCurrent", 0x005C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "ChargeDCPower", 0x005E, ModbusClientMixin.DATATYPE.UINT32),
                 #Register(self, "ChargeDCPowerPercentage", 0x0060, ModbusClientMixin.DATATYPE.UINT16),

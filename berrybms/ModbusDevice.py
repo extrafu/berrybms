@@ -16,6 +16,7 @@ class ModbusDevice(object):
         self.id = id
         self.connection = None
         self.registers = None
+        self.values = {}
 
     def disconnect(self):
         if self.connection != None:

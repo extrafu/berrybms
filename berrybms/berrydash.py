@@ -77,7 +77,6 @@ def buildConextGauge():
         return None
     
     active_power = 0
-    #battery_power = 0
     ac_load_active_power = 0
     mppt_dc_output_power = 0
     pv_input_active_today = 0
@@ -90,7 +89,6 @@ def buildConextGauge():
 
     for key in all_xw.keys():
         xw = all_xw[key]
-        #battery_power += xw['BatteryPower']
         ac_load_active_power += xw.get('LoadACPowerApparent',0)
         grid_ac_input_power += xw.get('GridACInputPower',0)
         grid_active_today += xw.get('GridInputActiveToday',0)

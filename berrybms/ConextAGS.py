@@ -26,7 +26,6 @@ class ConextAGS(ModbusDevice):
                 connection=None):
         super().__init__(id)
         self.connection = connection
-        self.values = {}
 
         if self.connection != None:
             self.registers = [
