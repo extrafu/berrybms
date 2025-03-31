@@ -9,23 +9,30 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
-import dash
-from dash import Dash, html, dcc, Input, Output
-import dash_daq as daq
-import dash_bootstrap_components as dbc
-from dash_bootstrap_templates import load_figure_template
-import plotly.graph_objects as go
+import dash # type: ignore
+from dash import Dash, html, dcc, Input, Output # type: ignore
+import dash_daq as daq # type: ignore
+import dash_bootstrap_components as dbc # type: ignore
+from dash_bootstrap_templates import load_figure_template # type: ignore
+import plotly.graph_objects as go # type: ignore
 import time
 import sys
-from flask_mqtt import Mqtt
+from flask_mqtt import Mqtt # type: ignore
 import json
+import yaml # type: ignore
+
+
+# Load the YAML configuration file
+f = open("config.yaml","r")
+config = yaml.load(f, Loader=yaml.SafeLoader)
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY, dbc.icons.FONT_AWESOME])
+app.title = "BerryBMS"
 server = app.server
 load_figure_template("darkly")
 
-server.config['MQTT_BROKER_URL'] = 'localhost'
-server.config['MQTT_BROKER_PORT'] = 1883 
+server.config['MQTT_BROKER_URL'] = config['mqtt']['host']
+server.config['MQTT_BROKER_PORT'] = int(config['mqtt']['port'])
 mqtt = Mqtt()
 mqtt.init_app(app)
 
@@ -46,16 +53,24 @@ def handle_mqtt_message(client, userdata, message):
      for key in devices.keys():
         if key.startswith("battmon"):
             global all_battmon
-            all_battmon[key] = devices[key]
+            d = all_battmon.get(key, dict())
+            d.update(devices[key])
+            all_battmon[key] = d
         elif key.startswith("bms"):
             global all_bms
-            all_bms[key] = devices[key]
+            d = all_bms.get(key, dict())
+            d.update(devices[key])
+            all_bms[key] = d
         elif key.startswith("mppt"):
             global all_mppt
-            all_mppt[key] = devices[key]
+            d = all_mppt.get(key, dict())
+            d.update(devices[key])
+            all_mppt[key] = d
         elif key.startswith("xw"):
             global all_xw
-            all_xw[key] = devices[key]
+            d = all_xw.get(key, dict())
+            d.update(devices[key])
+            all_xw[key] = d
 
 def buildConextGauge():
     if len(all_xw) == 0:
@@ -76,18 +91,18 @@ def buildConextGauge():
     for key in all_xw.keys():
         xw = all_xw[key]
         #battery_power += xw['BatteryPower']
-        ac_load_active_power += xw['LoadACPowerApparent']
-        grid_ac_input_power += xw['GridACInputPower']
-        grid_active_today += xw['GridInputActiveToday']
-        generator_ac_power += xw['GeneratorACPowerApparent']
-        generator_active_today += xw['GeneratorInputActiveToday']
-        charge_dc_power += xw['ChargeDCPower']
-        charge_dc_current += xw['ChargeDCCurrent']
+        ac_load_active_power += xw.get('LoadACPowerApparent',0)
+        grid_ac_input_power += xw.get('GridACInputPower',0)
+        grid_active_today += xw.get('GridInputActiveToday',0)
+        generator_ac_power += xw.get('GeneratorACPowerApparent',0)
+        generator_active_today += xw.get('GeneratorInputActiveToday',0)
+        charge_dc_power += xw.get('ChargeDCPower',0)
+        charge_dc_current += xw.get('ChargeDCCurrent',0)
 
     for key in all_mppt.keys():
             mppt = all_mppt[key]
-            mppt_dc_output_power += mppt['DCOutputPower']
-            pv_input_active_today += mppt['PVInputActiveToday']
+            mppt_dc_output_power += mppt.get('DCOutputPower',0)
+            pv_input_active_today += mppt.get('PVInputActiveToday',0)
 
     active_power =(mppt_dc_output_power+grid_ac_input_power+generator_ac_power)-(ac_load_active_power)
 
@@ -104,7 +119,7 @@ def buildConextGauge():
         digits=0   # available after 0.5, see https://github.com/plotly/dash-daq/pull/117/files
     )
 
-    row1 = html.Tr([html.Td("AC Load Active"), html.Td(f'{ac_load_active_power} W')])
+    row1 = html.Tr([html.Td("AC Load Active"), html.Td(f'{ac_load_active_power:.0f} W')])
     row2 = html.Tr([html.Td("MPPT DC Ouput"),
                     html.Td(['{} W ({} '.format(mppt_dc_output_power, time.strftime("%H:%M:%S", time.gmtime(pv_input_active_today))),
                             html.I(className='fa-solid fa-hourglass'),
@@ -165,36 +180,38 @@ def buildConextStats():
 
     for key in all_bms.keys():
         bms = all_bms[key]
-        soc = (bms['SOCStateOfcharge'] & 0x0FF)
+        soc = (bms.get('SOCStateOfcharge',0) & 0x0FF)
         if soc > highest_bms_soc:
             highest_bms_soc = soc
         if lowest_bms_soc > soc:
             lowest_bms_soc = soc
         average_bms_soc += soc
-        average_bms_voltage += bms['BatVol']
-        average_bms_current += bms['BatCurrent']
-        remaining_bms_capacity += bms['SOCCapRemain']
-        total_bms_capacity += bms['SOCFullChargeCap']
+        average_bms_voltage += bms.get('BatVol',0)
+        average_bms_current += bms.get('BatCurrent',0)
+        remaining_bms_capacity += bms.get('SOCCapRemain',0)
+        total_bms_capacity += bms.get('SOCFullChargeCap',0)
     average_bms_soc /= len(all_bms)
     average_bms_voltage /= len(all_bms)
+    average_bms_current /= len(all_bms)
     removed_bms_capacity = total_bms_capacity-remaining_bms_capacity
 
     if len(all_battmon):
         for key in all_battmon.keys():
             battmon = all_battmon[key]
-            average_battmon_soc += battmon['BatterySOC']
-            average_battmon_voltage += battmon['BatteryVoltage']
-            average_battmon_current += battmon['BatteryCurrent']
-            remaining_battmon_capacity += battmon['BatteryCapacityRemaining']
-            removed_battmon_capacity += battmon['BatteryCapacityRemoved']
-            total_battmon_capacity += battmon['BatteryCapacity']
+            average_battmon_soc += battmon.get('BatterySOC',0)
+            average_battmon_voltage += battmon.get('BatteryVoltage',0)
+            average_battmon_current += battmon.get('BatteryCurrent',0)
+            remaining_battmon_capacity += battmon.get('BatteryCapacityRemaining',0)
+            removed_battmon_capacity += battmon.get('BatteryCapacityRemoved',0)
+            total_battmon_capacity += battmon.get('BatteryCapacity',0)
         average_battmon_soc /=  len(all_battmon)
         average_battmon_voltage /= len(all_battmon)
+        average_battmon_current /= len(all_battmon)
 
     if (len(all_mppt)):
         for key in all_mppt.keys():
             mppt = all_mppt[key]
-            if mppt['DCOutputPower'] > 0 and mppt['PVPower'] > 0:
+            if mppt.get('DCOutputPower',0) > 0 and mppt.get('PVPower',0) > 0:
                 average_mppt_efficiency += mppt['DCOutputPower']/mppt['PVPower']
                 total_producing_mppt += 1
         if total_producing_mppt > 0:
@@ -203,7 +220,7 @@ def buildConextStats():
     if (len(all_xw)):
         for key in all_xw.keys():
             xw = all_xw[key]
-            if xw['GridACInputPower'] > 0 or xw['GeneratorACPowerApparent'] > 0:
+            if xw.get('GridACInputPower',0) > 0 or xw.get('GeneratorACPowerApparent',0) > 0:
                 average_xw_efficiency = xw['ChargeDCPower']/(xw['GridACInputPower']+xw['GeneratorACPowerApparent']-xw['LoadACPowerApparent'])
                 total_producing_xw += 1
         if total_producing_xw > 0:
@@ -235,7 +252,7 @@ def buildConextStats():
     return card
 
 def buildBMSGauge(key, bms):
-    cellCount = bms.get("CellCount")
+    cellCount = bms.get("CellCount",0)
     highestCellVoltage = 0
     lowestCellVoltage = sys.maxsize
     highestCellIndex = 0
@@ -245,7 +262,7 @@ def buildBMSGauge(key, bms):
     tooltips = []
 
     for i in range(0,cellCount):
-        cellVoltage = round(float(bms.get(f'CellVol{i}')),3)
+        cellVoltage = round(float(bms.get(f'CellVol{i}',0)),3)
         if cellVoltage < lowestCellVoltage:
             lowestCellIndex = i
             lowestCellVoltage = cellVoltage
@@ -256,13 +273,14 @@ def buildBMSGauge(key, bms):
         badges.append(b)
         tooltips.append(dbc.Tooltip(f'Cell {i+1}', target=f'{key}-cellVol{i}'))
 
-    badges[highestCellIndex].color = "green"
-    badges[lowestCellIndex].color = "warning"
-    cellVoltageDrift = highestCellVoltage-lowestCellVoltage
+    if len(badges) > 0:
+        badges[highestCellIndex].color = "green"
+        badges[lowestCellIndex].color = "warning"
+        cellVoltageDrift = highestCellVoltage-lowestCellVoltage
 
     warning_icon_color = 'gray'
     warning_message = 'No warning'
-    if bms.get("Alarms") > 0:
+    if bms.get("Alarms",0) > 0:
         warning_icon_color = 'red'
 
     if bms['BatCurrent'] > 0:
@@ -275,7 +293,7 @@ def buildBMSGauge(key, bms):
     card = dbc.Card(
         [
             dbc.CardHeader(children=[
-                html.B(f"{bms['name']} - {bms['ManufacturerDeviceID']} (v{bms['SoftwareVersion']}) ", style={'font-size':'13px'}),
+                html.B(f"{bms.get('name','')} - {bms.get('ManufacturerDeviceID','')} (v{bms.get('SoftwareVersion','')}) ", style={'font-size':'13px'}),
                 html.I(className='fa-solid fa-triangle-exclamation', style={"color": warning_icon_color}, id=f'{key}-warning'),
                 dbc.Tooltip(warning_message, target=f'{key}-warning')
                 ]),    
@@ -287,15 +305,15 @@ def buildBMSGauge(key, bms):
                     id=f'soc-gauge-{key}',
                     max=100,
                     size=200,
-                    units=f"{bms['SOCCapRemain']:.2f} Ah of {bms['SOCFullChargeCap']:.0f}",
+                    units=f"{bms.get('SOCCapRemain',0):.2f} Ah of {bms.get('SOCFullChargeCap',0):.0f}",
                     style={'display': 'block', 'margin-bottom': -80, 'margin-top': -30}, 
-                    value=(bms['SOCStateOfcharge'] & 0x0FF),
+                    value=(bms.get('SOCStateOfcharge',0) & 0x0FF),
                     digits=0   # available after 0.5, see https://github.com/plotly/dash-daq/pull/117/files
                 ),
                 html.Span([
                         html.I(className=charge_discharge_icon, style={"color": charge_discharge_icon_color}),
-                        html.Span(f" {abs(bms['BatCurrent']):.2f}A/{(abs(bms['BatCurrent'])*bms['BatVol']):.0f}W ({bms['SOCCycleCount']} cycles, {cellVoltageDrift:.3f}v drift)")
-                ], style={'font-size':'13px'}),
+                        html.Span(f" {abs(bms.get('BatCurrent',0)):.2f}A/{(abs(bms.get('BatCurrent',0))*bms.get('BatVol',0)):.0f}W ({bms.get('SOCCycleCount',0)} cycles, {cellVoltageDrift:.3f}v drift)")
+                ], style={'font-size':'12px'}),
                 html.Br(),
                 html.Span(badges+tooltips)
             ])    
@@ -309,7 +327,7 @@ def buildBMSGauge(key, bms):
 
 def buildBMSGauges():
     cols = []
-    for key in all_bms.keys():
+    for key in sorted(all_bms.keys()):
         bms = all_bms[key]
         card = buildBMSGauge(key, bms)
         cols.append(dbc.Col(card))
@@ -361,17 +379,17 @@ def update_tabs(n):
         # Get data from the MPPT charge controllers
         for key in all_mppt.keys():
             mppt = all_mppt[key]
-            y_axis[1] += mppt[f'EnergyToBattery{period}']
-            y_axis[2] += mppt[f'EnergyFromPV{period}']
+            y_axis[1] += mppt.get(f'EnergyToBattery{period}',0)
+            y_axis[2] += mppt.get(f'EnergyFromPV{period}',0)
 
         # Get data from the XW inverters
         for key in all_xw.keys():
             xw = all_xw[key]
-            y_axis[0] += xw[f'EnergyToBattery{period}']
-            y_axis[1] += xw[f'EnergyFromBattery{period}']
-            y_axis[3] += xw[f'GeneratorInputEnergy{period}']
-            y_axis[4] += xw[f'GridInputEnergy{period}']
-            y_axis[5] += xw[f'LoadOutputEnergy{period}']
+            y_axis[0] += xw.get(f'EnergyToBattery{period}',0)
+            y_axis[1] += xw.get(f'EnergyFromBattery{period}',0)
+            y_axis[3] += xw.get(f'GeneratorInputEnergy{period}',0)
+            y_axis[4] += xw.get(f'GridInputEnergy{period}',0)
+            y_axis[5] += xw.get(f'LoadOutputEnergy{period}',0)
 
         for i in range(0,6):
             y_axis[i] = round(y_axis[i], 2)
