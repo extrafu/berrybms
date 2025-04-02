@@ -8,6 +8,9 @@
 # Free Software Foundation; either version 3, or (at your option) any
 # later version.
 #
+from datetime import datetime
+from time import mktime
+
 from ModbusDevice import ModbusDevice
 
 class ConextSCP(ModbusDevice):
@@ -26,4 +29,12 @@ class ConextSCP(ModbusDevice):
         pass
     
     def formattedOutput(self):
-        return ""
+        current_datetime = self.values.get("CurrentDateTime", None)
+        value = ""
+
+        if current_datetime != None:
+            value = datetime.fromtimestamp(mktime(current_datetime))
+
+        s = f"== Conext SCP (id {self.id}) ==\n"
+        s += f'Current datetime:\t{value}'
+        return s
