@@ -54,7 +54,7 @@ class JKBMSSniffer(object):
         voltages = list(map(lambda x: x/1000, struct.unpack("<32H", bytes[:64])))
         #print(f'Cell voltages (v): {voltages}')
         
-        (CellVolAve) = struct.unpack("<H", bytes[68:70])
+        (CellVolAve,) = struct.unpack("<H", bytes[68:70])
         #print(f'CellVolAve={CellVolAve[0]/1000}')
 
         #resistances = list(map(lambda x: x/1000, struct.unpack("<32H", bytes[74:138])))
@@ -73,16 +73,18 @@ class JKBMSSniffer(object):
                     break
                 bms.values[f'CellVol{i}'] = voltage
 
-            bms.values["CellVolAve"] = CellVolAve[0]/1000
-            bms.values["BatVol"] = BatVol/1000
-            bms.values["BatWatt"] = BatWatt/1000
-            bms.values["BatCurrent"] = BatCurrent/1000
-            bms.values["Alarm"] = Alarm
-            bms.values["BalanSta"] = BalanSta
-            bms.values["SOCStateOfcharge"] = SOCStateOfcharge
-            bms.values["SOCCapRemain"] = SOCCapRemain/1000
-            bms.values["SOCFullChargeCap"] = SOCFullChargeCap/1000
-            bms.values["SOCCycleCount"] = SOCCycleCount
+            bms.values.update({
+                "CellVolAve": CellVolAve / 1000,
+                "BatVol": BatVol / 1000,
+                "BatWatt": BatWatt / 1000,
+                "BatCurrent": BatCurrent / 1000,
+                "Alarm": Alarm,
+                "BalanSta": BalanSta,
+                "SOCStateOfcharge": SOCStateOfcharge,
+                "SOCCapRemain": SOCCapRemain / 1000,
+                "SOCFullChargeCap": SOCFullChargeCap / 1000,
+                "SOCCycleCount": SOCCycleCount,
+            })
             #print(bms)
 
     def decode_settings(self, bytes, bms_id):
@@ -206,11 +208,7 @@ class JKBMSSniffer(object):
                         #exit(1)
 
                 # Publish the updates to MQTT
-                paho_client.connect(self.config['mqtt']['host'], int(self.config['mqtt']['port']), 60)
-                all_devices = {}
-                bms.publish(all_devices)
-                paho_client.publish("berrybms", json.dumps(all_devices))
-                paho_client.disconnect()
+                self.publish_updates(paho_client, bms)
 
                 # We force the discovery of other data. The "about" data
                 # seems to never be advertised without asking for it.
@@ -218,3 +216,9 @@ class JKBMSSniffer(object):
                     self.force_data_discovery()
                 response_count += 1
 
+    def publish_updates(self, paho_client, bms):
+        paho_client.connect(self.config['mqtt']['host'], int(self.config['mqtt']['port']), 60)
+        all_devices = {}
+        bms.publish(all_devices)
+        paho_client.publish("berrybms", json.dumps(all_devices))
+        paho_client.disconnect()
