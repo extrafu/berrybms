@@ -11,7 +11,6 @@
 import struct
 import binascii
 import serial # type: ignore
-import time
 
 import paho.mqtt.client as paho # type: ignore
 import json
@@ -29,24 +28,28 @@ class JKBMSSniffer(object):
                  config):
           
             self.config = config
-            self.s_con = serial.Serial(config['bms']['jk_sniffer']['port'])
-            self.s_con.baudrate = 115200
-            self.s_con.bytesize = serial.EIGHTBITS
-            self.s_con.stopbits = serial.STOPBITS_ONE
-            self.s_con.parity = serial.PARITY_NONE
-
+            self.s_con = self.setup_serial(config)
             self.all_bms = [None] * 16
             self.read_buffer = bytearray()
     
-    def decodeAbout(self, bytes, bms_id):
+    def setup_serial(self, config):
+        s_con = serial.Serial(config['bms']['jk_sniffer']['port'])
+        s_con.baudrate = 115200
+        s_con.bytesize = serial.EIGHTBITS
+        s_con.stopbits = serial.STOPBITS_ONE
+        s_con.parity = serial.PARITY_NONE
+        return s_con
+
+    def decode_about(self, bytes, bms_id):
         #print(f'decoding about from bytes: {binascii.hexlify(bytes)} len={len(bytes)}')
         bms = self.all_bms[bms_id]
-        bms.values["ManufacturerDeviceID"] = bytes[0:15].decode("UTF-8")
-        bms.values["HardwareVersion"] = bytes[16:23].decode("UTF-8")
-        bms.values["SoftwareVersion"] = bytes[24:31].decode("UTF-8")
-        #print(bms)
+        if bms is not None:
+            bms.values["ManufacturerDeviceID"] = bytes[0:15].decode("UTF-8")
+            bms.values["HardwareVersion"] = bytes[16:23].decode("UTF-8")
+            bms.values["SoftwareVersion"] = bytes[24:31].decode("UTF-8")
+            #print(bms)
 
-    def decodeStatus(self, bytes, bms_id):
+    def decode_status(self, bytes, bms_id):
         #print(f'decoding status from bytes: {binascii.hexlify(bytes)} len={len(bytes)}')        
         voltages = list(map(lambda x: x/1000, struct.unpack("<32H", bytes[:64])))
         #print(f'Cell voltages (v): {voltages}')
@@ -63,31 +66,33 @@ class JKBMSSniffer(object):
         (BalanSta,SOCStateOfcharge,SOCCapRemain,SOCFullChargeCap,SOCCycleCount) = struct.unpack("<BBiII", bytes[166:180])
 
         bms = self.all_bms[bms_id]
-        for i in range(32):
-            voltage = voltages[i]
-            if voltage == 0:
-                break
-            bms.values[f'CellVol{i}'] = voltage
+        if bms is not None:
+            for i in range(32):
+                voltage = voltages[i]
+                if voltage == 0:
+                    break
+                bms.values[f'CellVol{i}'] = voltage
 
-        bms.values["CellVolAve"] = CellVolAve[0]/1000
-        bms.values["BatVol"] = BatVol/1000
-        bms.values["BatWatt"] = BatWatt/1000
-        bms.values["BatCurrent"] = BatCurrent/1000
-        bms.values["Alarm"] = Alarm
-        bms.values["BalanSta"] = BalanSta
-        bms.values["SOCStateOfcharge"] = SOCStateOfcharge
-        bms.values["SOCCapRemain"] = SOCCapRemain/1000
-        bms.values["SOCFullChargeCap"] = SOCFullChargeCap/1000
-        bms.values["SOCCycleCount"] = SOCCycleCount
-        #print(bms)
+            bms.values["CellVolAve"] = CellVolAve[0]/1000
+            bms.values["BatVol"] = BatVol/1000
+            bms.values["BatWatt"] = BatWatt/1000
+            bms.values["BatCurrent"] = BatCurrent/1000
+            bms.values["Alarm"] = Alarm
+            bms.values["BalanSta"] = BalanSta
+            bms.values["SOCStateOfcharge"] = SOCStateOfcharge
+            bms.values["SOCCapRemain"] = SOCCapRemain/1000
+            bms.values["SOCFullChargeCap"] = SOCFullChargeCap/1000
+            bms.values["SOCCycleCount"] = SOCCycleCount
+            #print(bms)
 
-    def decodeSettings(self, bytes, bms_id):
+    def decode_settings(self, bytes, bms_id):
         #print(f'decoding settings from bytes: {binascii.hexlify(bytes)} len={len(bytes)}')
         bms = self.all_bms[bms_id]
-        (bms.values["CellCount"],bms.values["BatChargeEN"],bms.values["BatDisChargeEN"]) = struct.unpack("<III", bytes[108:120])
-        #print(bms)
+        if bms is not None:
+            (bms.values["CellCount"],bms.values["BatChargeEN"],bms.values["BatDisChargeEN"]) = struct.unpack("<III", bytes[108:120])
+            #print(bms)
 
-    def readFromBMS(self):        
+    def read_from_bms(self):        
         l = len(self.read_buffer)
         
         # Our read_buffer is big enough, let's try to find our response header
@@ -114,7 +119,7 @@ class JKBMSSniffer(object):
         self.read_buffer += self.s_con.read(available)
         return None
 
-    def forceDataDiscovery(self):
+    def force_data_discovery(self):
         for i in reversed(range(16)):
             bms = self.all_bms[i]
             if bms == None:
@@ -134,7 +139,7 @@ class JKBMSSniffer(object):
 
             if len(command) > 1:
                 #print(f'Forcing data discovery for bms {i}')
-                crc = self.modbusCRC(command)
+                crc = self.modbus_crc(command)
                 #print(f'crc={crc}')
                 command += crc
                 self.s_con.write(command)
@@ -142,7 +147,7 @@ class JKBMSSniffer(object):
                 return
 
     # Copied from https://stackoverflow.com/a/75328573 to calculate the needed checksum
-    def modbusCRC(self, msg):
+    def modbus_crc(self, msg):
         crc = 0xFFFF
         for n in range(len(msg)):
             crc ^= msg[n]
@@ -163,7 +168,7 @@ class JKBMSSniffer(object):
         response_count = 1
 
         while True:
-            response = self.readFromBMS()
+            response = self.read_from_bms()
 
             if response != None:
                 frame_type = int.from_bytes(response[4:5])
@@ -189,13 +194,13 @@ class JKBMSSniffer(object):
 
                 match frame_type:
                     case 0x1:
-                        self.decodeSettings(response[6:], bms_id)
+                        self.decode_settings(response[6:], bms_id)
                         pass
                     case 0x2:
-                        self.decodeStatus(response[6:], bms_id)
+                        self.decode_status(response[6:], bms_id)
                         pass
                     case 0x3:
-                        self.decodeAbout(response[6:], bms_id)
+                        self.decode_about(response[6:], bms_id)
                     case _:
                         print("Unknown reponse! %s" % (binascii.hexlify(response)))
                         #exit(1)
@@ -210,6 +215,6 @@ class JKBMSSniffer(object):
                 # We force the discovery of other data. The "about" data
                 # seems to never be advertised without asking for it.
                 if response_count % 10 == 0:
-                    self.forceDataDiscovery()
+                    self.force_data_discovery()
                 response_count += 1
 
