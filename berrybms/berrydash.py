@@ -78,6 +78,7 @@ def buildConextGauge():
     
     active_power = 0
     ac_load_active_power = 0
+    mppt_pv_input_power = 0
     mppt_dc_output_power = 0
     pv_input_active_today = 0
     grid_ac_input_power = 0
@@ -99,6 +100,7 @@ def buildConextGauge():
 
     for key in all_mppt.keys():
             mppt = all_mppt[key]
+            mppt_pv_input_power += mppt.get('PVPower', 0)
             mppt_dc_output_power += mppt.get('DCOutputPower',0)
             pv_input_active_today += mppt.get('PVInputActiveToday',0)
 
@@ -118,23 +120,24 @@ def buildConextGauge():
     )
 
     row1 = html.Tr([html.Td("AC Load Active"), html.Td(f'{ac_load_active_power:.0f} W')])
-    row2 = html.Tr([html.Td("MPPT DC Ouput"),
-                    html.Td(['{} W ({} '.format(mppt_dc_output_power, time.strftime("%H:%M:%S", time.gmtime(pv_input_active_today))),
+    row2 = html.Tr([html.Td("MPPT PV Input"),
+                    html.Td(['{} W ({} '.format(mppt_pv_input_power, time.strftime("%H:%M:%S", time.gmtime(pv_input_active_today))),
                             html.I(className='fa-solid fa-hourglass'),
                             ')'])
                     ])
-    row3 = html.Tr([html.Td("Grid AC Input"),
+    row3 = html.Tr([html.Td("MPPT DC Ouput"), html.Td(f'{mppt_dc_output_power} W')])
+    row4 = html.Tr([html.Td("Grid AC Input"),
                     html.Td(['{} W ({} '.format(grid_ac_input_power, time.strftime("%H:%M:%S", time.gmtime(grid_active_today))),
                             html.I(className='fa-solid fa-hourglass'),
                             ')'])
                     ])
-    row4 = html.Tr([html.Td("Generator AC Input"),
+    row5 = html.Tr([html.Td("Generator AC Input"),
                     html.Td(['{} W ({} '.format(generator_ac_power, time.strftime("%H:%M:%S", time.gmtime(generator_active_today))),
                             html.I(className='fa-solid fa-hourglass'),
                             ')'])
                     ])
-    row5 = html.Tr([html.Td("XW+ Charge DC"), html.Td(f'{charge_dc_power} W ({charge_dc_current:.2f} A)')])
-    table_body_left = [html.Tbody([row1, row2, row3, row4, row5])]
+    row6 = html.Tr([html.Td("XW+ Charge DC"), html.Td(f'{charge_dc_power} W ({charge_dc_current:.2f} A)')])
+    table_body_left = [html.Tbody([row1, row2, row3, row4, row5, row6])]
 
     card = dbc.Card(
         [
@@ -224,12 +227,12 @@ def buildConextStats():
         if total_producing_xw > 0:
             average_xw_efficiency /= total_producing_xw
 
-    row1 = html.Tr([html.Td("Average SOC (BMS)"), html.Td(f'{average_bms_soc:.2f} % ({lowest_bms_soc} % / {highest_bms_soc} %)')])
-    row2 = html.Tr([html.Td("Average SOC (BattMon)"), html.Td(f'{average_battmon_soc:.2f} %')])
-    row3 = html.Tr([html.Td("Average voltage/current (BMS)"), html.Td(f'{average_bms_voltage:.2f} v / {average_bms_current:.2f} A')])
-    row4 = html.Tr([html.Td("Average voltage/current (BattMon)"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
-    row5 = html.Tr([html.Td("Removed capacity (BMS)"), html.Td(f'{removed_bms_capacity:.1f} Ah ({remaining_bms_capacity:.1f} Ah remaining of {total_bms_capacity:.0f} Ah)')])
-    row6 = html.Tr([html.Td("Removed capacity (BattMon)"), html.Td(f'{removed_battmon_capacity:.1f} Ah ({remaining_battmon_capacity:.1f} Ah remaining of {total_battmon_capacity:.0f} Ah)')])
+    row1 = html.Tr([html.Td("Average SOC - BMS"), html.Td(f'{average_bms_soc:.2f} % ({lowest_bms_soc} % / {highest_bms_soc} %)')])
+    row2 = html.Tr([html.Td("Average SOC - BattMon"), html.Td(f'{average_battmon_soc:.2f} %')])
+    row3 = html.Tr([html.Td("Average voltage/current - BMS"), html.Td(f'{average_bms_voltage:.2f} v / {average_bms_current:.2f} A')])
+    row4 = html.Tr([html.Td("Average voltage/current - BattMon"), html.Td(f'{average_battmon_voltage:.2f} v / {average_battmon_current:.2f} A')])
+    row5 = html.Tr([html.Td("Removed capacity - BMS"), html.Td(f'{removed_bms_capacity:.1f} Ah ({remaining_bms_capacity:.1f} Ah remaining of {total_bms_capacity:.0f} Ah)')])
+    row6 = html.Tr([html.Td("Removed capacity - BattMon"), html.Td(f'{removed_battmon_capacity:.1f} Ah ({remaining_battmon_capacity:.1f} Ah remaining of {total_battmon_capacity:.0f} Ah)')])
     row7 = html.Tr([html.Td("Average MPPT / XW charge efficiency"), html.Td(f'{average_mppt_efficiency*100:.2f} % / {average_xw_efficiency*100:.2f} %')])
     table_body_right = [html.Tbody([row1, row2, row3, row4, row5, row6, row7])]
 
@@ -407,7 +410,7 @@ def update_tabs(n):
         tab = dbc.Tab(id=f'tab-{tab_index}',
                       label=period.replace('This',''),
                       active_label_style={"color": "#F39C12"},
-                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '50vw', 'height': '45vh'})]
+                      children=[dcc.Graph(id=f'graph-{period}', figure=fig, config={'displayModeBar': False}, style={'width': '50vw', 'height': '47vh'})]
                     )
         tabs.append(tab)
         tab_index += 1

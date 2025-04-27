@@ -1,8 +1,11 @@
 # JK BMS configuration
-# Each BMS must have a nice which can be anything except "jk_sniffer"
-# You must set the correct modbus ID and serial port to use
-# to communicate with each individual BMS.
+#
+# When using polling mode, each BMS must have a name which can be anything except "jk_sniffer"
+# You must set the correct modbus ID and serial port to use to communicate with each individual BMS.
+#
+# When using sniffing mode, simply uncomming the "jk_sniffer" section and set the right port to use.
 bms:
+  # Polling mode
   # jk0:
   #   id: 0
   #   port: "/dev/ttyACM0"
@@ -19,6 +22,7 @@ bms:
   #   id: 3
   #   port: "/dev/ttyACM3"
   #
+  # Sniffing mode
   jk_sniffer:
     port: "/dev/ttyUSB0"
 
