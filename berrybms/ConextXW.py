@@ -19,14 +19,13 @@ class ConextXW(ModbusDevice):
 
     def __init__(self,
                 id,
+                serial_number=None,
                 connection=None):
-        super().__init__(id)
+        super().__init__(id, serial_number)
         self.connection = connection
 
         if self.connection != None:
             self.registers = [
-                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
-                #Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),  # Generates an exception!?!
                 Register(self, "EnergyFromBatteryThisHour", 0x00D0, ModbusClientMixin.DATATYPE.UINT32, 0.001), # looks like what goes INTO the battery from AC1/AC2
                 Register(self, "EnergyFromBatteryToday", 0x00D4, ModbusClientMixin.DATATYPE.UINT32, 0.001),    # looks like what goes INTO the battery from AC1/AC2
                 Register(self, "BatteryDischargeActiveToday", 0x00D6, ModbusClientMixin.DATATYPE.UINT32),
@@ -69,7 +68,7 @@ class ConextXW(ModbusDevice):
         pass
 
     def publish(self, dict):
-        topic_soc = "xw-%d" % self.id
+        topic_soc = "xw-%s" % self.serial_number
 
         if self.registers != None:
             self.values.update(self.dump())
@@ -88,7 +87,7 @@ class ConextXW(ModbusDevice):
         if gridACInputPower > 0 or generatorACPowerApparent > 0:
             efficiency = chargeDCPower/(gridACInputPower+generatorACPowerApparent-loadACPowerApparent)
 
-        s = f"== Conext XW (id {self.id}) ==\n"
+        s = f"== Conext XW (id: {self.id} - serial: {self.serial_number}) ==\n"
         s += f"Active Power:\t\t{loadACPowerApparent:.2f}W\n"
         s += f'Input Power\t\tGrid: {gridACInputPower}W\tGenerator: {generatorACPowerApparent}W\n'
         s += f"Charge DC Power:\t{chargeDCPower:.2f}W\n"

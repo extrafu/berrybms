@@ -26,6 +26,7 @@ class ConextInsightHome(ModbusDevice):
     ConextProductMap = {
         "865-1032":     ConextMPPT,
         "865-1050":     ConextSCP,
+        "865-1050-01":  ConextSCP,
         "865-1060-01":  ConextAGS,      # Missing -01 in documentation
         "865-1080-01":  ConextBattMon,  # Not documented
         "865-6848-01":  ConextXW
@@ -34,11 +35,13 @@ class ConextInsightHome(ModbusDevice):
     def __init__(self,
                  host=None,
                  port=None,
-                 ids=None):
+                 ids=None,
+                 serial_number_hack=None):
         super().__init__(id)
         self.host = host
         self.port = port
         self.ids = ids
+        self.serial_number_hack = serial_number_hack
         self.devices = []
     
     def connect(self):
@@ -73,7 +76,21 @@ class ConextInsightHome(ModbusDevice):
                 print(f"Unknown Conext device {str(value)}")
                 continue
 
-            self.devices.append(clazz(i, self.connection))
+            # All is good, let's fetch the serial number that we will use as the
+            # unique identifier for all devices. We fist check if we need use the
+            # hack, which is useful for XW+6848 returning a modbus exception when
+            # trying to fetch the HardwareSerialNumber :/
+            if self.serial_number_hack != None and self.serial_number_hack.get(i, None) != None:
+                value = self.serial_number_hack[i]
+            else:
+                reg = Register(device, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10)
+                value = reg.getValue(self.connection)
+
+                if value == None:
+                    print(f"No hardware serial number for id {i} of type {clazz}")
+                    continue
+
+            self.devices.append(clazz(i, value, self.connection))
 
         return self.devices
     

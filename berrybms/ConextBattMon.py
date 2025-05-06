@@ -19,14 +19,13 @@ class ConextBattMon(ModbusDevice):
 
     def __init__(self,
                 id,
+                serial_number=None,
                 connection=None):
-        super().__init__(id)
+        super().__init__(id, serial_number)
         self.connection = connection
 
         if self.connection != None:
             self.registers = [
-                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
-                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
                 Register(self, "BatteryVoltage", 0x0046, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "BatteryCapacity", 0x0092, ModbusClientMixin.DATATYPE.UINT16),
                 Register(self, "BatteryCapacityRemaining", 0x0058, ModbusClientMixin.DATATYPE.UINT32),
@@ -43,7 +42,7 @@ class ConextBattMon(ModbusDevice):
         pass
 
     def publish(self, dict):
-        topic_soc = "battmon-%d" % self.id
+        topic_soc = "battmon-%s" % self.serial_number
 
         if self.registers != None:
             self.values.update(self.dump())
@@ -53,7 +52,7 @@ class ConextBattMon(ModbusDevice):
         if self.registers != None:
             self.values.update(self.dump())
         
-        s = f'== Conext BattMon (id {self.id}) ==\n'
+        s = f'== Conext BattMon (id: {self.id} - serial: {self.serial_number}) ==\n'
         s += f'Capacity:\t\t{self.values.get("BatteryCapacityRemaining",0)}Ah of {self.values.get("BatteryCapacity",0)}Ah ({self.values.get("BatteryCapacityRemoved",0)}Ah removed)\n'
         s += f'Active Power:\t\t{self.values.get("BatteryVoltage",0):.2f}v / {self.values.get("BatteryCurrent",0):.2f}A\n'
         s += f'SOC:\t\t\t{self.values.get("BatterySOC",0)}%'

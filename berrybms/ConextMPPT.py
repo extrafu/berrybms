@@ -19,14 +19,13 @@ class ConextMPPT(ModbusDevice):
 
     def __init__(self,
                 id,
+                serial_number=None,
                 connection=None):
-        super().__init__(id)
+        super().__init__(id,serial_number)
         self.connection = connection
 
         if self.connection != None:
             self.registers = [
-                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
-                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
                 Register(self, "PVVoltage", 0x004C, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "PVCurrent", 0x004E, ModbusClientMixin.DATATYPE.UINT32, 0.001),
                 Register(self, "PVPower", 0x0050, ModbusClientMixin.DATATYPE.UINT32),
@@ -51,7 +50,7 @@ class ConextMPPT(ModbusDevice):
         pass
 
     def publish(self, dict):
-        topic_soc = "mppt-%d" % self.id
+        topic_soc = "mppt-%s" % self.serial_number
 
         if self.registers != None:
             self.values.update(self.dump())
@@ -68,7 +67,7 @@ class ConextMPPT(ModbusDevice):
         if dcOutputPower > 0 and pvPower > 0:
             efficiency = dcOutputPower/pvPower
 
-        s = f'== Conext MPPT (id {self.id}) ==\n'
+        s = f'== Conext MPPT (id: {self.id} - serial: {self.serial_number}) ==\n'
         s += f'PV Input Power:\t\t{pvPower}W - {self.values.get("PVVoltage",0):.2f}v / {self.values.get("PVCurrent",0):.2f}A\n'
         s += f'DC Output Power:\t{dcOutputPower}W - {self.values.get("DCOutputVoltage",0):.2f}v / {self.values.get("DCOutputCurrent",0):.2f}A\n'
         s += f'Efficiency\t\t{efficiency*100:.2f}%\n'

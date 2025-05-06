@@ -17,8 +17,9 @@ class ConextSCP(ModbusDevice):
 
     def __init__(self,
                 id,
+                serial_number=None,
                 connection=None):
-        super().__init__(id)
+        super().__init__(id, serial_number)
         self.connection = connection
         self.values = {}
 
@@ -35,6 +36,6 @@ class ConextSCP(ModbusDevice):
         if current_datetime != None:
             value = datetime.fromtimestamp(mktime(current_datetime))
 
-        s = f"== Conext SCP (id {self.id}) ==\n"
+        s = f"== Conext SCP (id: {self.id} - serial: {self.serial_number}) ==\n"
         s += f'Current datetime:\t{value}'
         return s

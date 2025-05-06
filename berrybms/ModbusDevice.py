@@ -12,8 +12,9 @@ import json
 
 class ModbusDevice(object):
 
-    def __init__(self, id):
+    def __init__(self, id, serial_number=None):
         self.id = id
+        self.serial_number = serial_number
         self.connection = None
         self.registers = None
         self.values = {}

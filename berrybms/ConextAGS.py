@@ -23,15 +23,13 @@ class ConextAGS(ModbusDevice):
 
     def __init__(self,
                 id,
+                serial_number=None,
                 connection=None):
-        super().__init__(id)
+        super().__init__(id, serial_number)
         self.connection = connection
 
         if self.connection != None:
             self.registers = [
-                Register(self, "FGANumber", 0x000A, ModbusClientMixin.DATATYPE.STRING, None, 10),
-                #Register(self, "UniqueIDNumber", 0x0014, ModbusClientMixin.DATATYPE.STRING, None, 10),
-                Register(self, "HardwareSerialNumber", 0x002B, ModbusClientMixin.DATATYPE.STRING, None, 10),
                 Register(self, "GeneratorMode", 0x004D, ModbusClientMixin.DATATYPE.UINT16),
                 Register(self, "GeneratorAutoStartOnBatterySOC", 0x0055, ModbusClientMixin.DATATYPE.UINT16),
                 Register(self, "GeneratorAutoStopOnBatterySOC", 0x0056, ModbusClientMixin.DATATYPE.UINT16),
@@ -65,7 +63,7 @@ class ConextAGS(ModbusDevice):
         socLevelStopGenerator = self.values.get("SOCLevelStopGenerator",0)
         socLevelStartGenerator = self.values.get("SOCLevelStartGenerator",0)
 
-        s = f"== Conext AGS (id {self.id}) ==\n"
+        s = f"== Conext AGS (id: {self.id} - serial: {self.serial_number}) ==\n"
         s += f"Generator Mode:\t\t{generatorMode}\n"
         s += f"SOC Triggers\t\tStart: {socLevelStartGenerator}%\tStop: {socLevelStopGenerator}%"
         return s

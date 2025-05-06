@@ -24,11 +24,13 @@ from ConextInsightHome import ConextInsightHome
 from JKBMS import JKBMS
 from JKBMSSniffer import JKBMSSniffer
 from Register import Register
+from XanbusSniffer import XanbusSniffer
 
 # Global variables to enable cleanups in signal handler
 all_modbus_devices = []
 paho_client = None
 jkbms_sniffer = None
+xanbus_sniffer = None
 
 def cleanup(_signo, _stack_frame):
     print("Cleaning up before being terminated!")
@@ -49,10 +51,15 @@ def main(daemon):
     f = open("config.yaml","r")
     config = yaml.load(f, Loader=yaml.SafeLoader)
 
+    # We removing logging for subthreads
+    logging.basicConfig(handlers=[])
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
     while True:
         # Connect to the MQTT server. We do it each time since it's not costly
         # and avoids long keepalive if the updateinterval is set to a high value.
-        global paho_client, jkbms_sniffer
+        global paho_client, jkbms_sniffer, xanbus_sniffer, all_modbus_devices
         paho_client = paho.Client()
         try:
             paho_client.connect(config['mqtt']['host'], int(config['mqtt']['port']), 60)
@@ -60,7 +67,6 @@ def main(daemon):
             print("Couldn't connect to the MQTT broker, the GUI part if used, won't be updated.")
             paho_client = None
 
-        global all_modbus_devices
         all_devices = {}
         all_bms = config.get('bms', dict())
 
@@ -80,8 +86,8 @@ def main(daemon):
 
             if key == "jk_sniffer":
                 if jkbms_sniffer == None:
-                    jkbms_sniffer = JKBMSSniffer(config)
-                    t = threading.Thread(target=jkbms_sniffer.sniff, daemon=True)
+                    jkbms_sniffer = JKBMSSniffer(config, logger)
+                    t = threading.Thread(target=jkbms_sniffer.sniff, daemon=False)
                     t.start()
                     print("Started JKBMS sniffer thread!")
                 continue
@@ -117,8 +123,20 @@ def main(daemon):
             # Publish all BMS values in MQTT
             jkbms.publish(all_devices)
 
-        if config['insighthome'] != None:
-            conext = ConextInsightHome(config['insighthome']['host'], config['insighthome']['port'], config['insighthome'].get('ids', None))
+        # We start our Xanbus sniffer thread after polling (if enabled) the
+        # InsightHome as it'll update properly populated data structures from there
+        if config['conext'].get('xanbus_sniffer', None) != None:
+            if xanbus_sniffer == None:
+                xanbus_sniffer = XanbusSniffer(config, logger)
+                t = threading.Thread(target=xanbus_sniffer.sniff, daemon=False)
+                t.start()
+                print("Started Xanbus sniffer thread!")
+
+        if config['conext']['insighthome'] != None:
+            conext = ConextInsightHome(config['conext']['insighthome']['host'],
+                                       config['conext']['insighthome']['port'],
+                                       config['conext']['insighthome'].get('ids', None),
+                                       config['conext'].get('serial_number_hack', None))
             all_modbus_devices.append(conext)
             c = conext.connect()
             devices = conext.allDevices()
