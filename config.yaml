@@ -28,10 +28,24 @@ bms:
 
 # Conext InsightHome configuration.
 # ids is optional, but will make things faster and allows you to skip modbus devices
-insighthome:
-  host: "192.168.1.5"
-  port: 503
-  ids: [10,50,170,171,190]
+conext:
+  insighthome:
+    host: "192.168.1.5"
+    port: 503
+    ids: [10,50,170,171,190]
+
+  # Hack to preset Modbus ID <> Hardware Serial Number when it can't be fetch
+  # like it's the case for the XW+6848. Get the value for your Conext device
+  # from the Conext InsightHome's web interface.
+  serial_number_hack:
+    10: "0000184D948A"
+
+  # Define host/port if you want to use socketcand otherwise, socketcan will be used
+  # channel must be defined in both cases.
+  xanbus_sniffer:
+    #host: "192.168.1.4"
+    #port: "29536"
+    channel: "can0"
 
 # If you want to push data in MQTT (for the GUI part of BerryBMS, Node-RED, etc.)
 # you must set the host/port where to push it. You can use the default
@@ -40,6 +54,7 @@ mqtt:
   host: "localhost"
   port: 1883
 
-# If you run BerryBMS as a daemon (command line or through systemd)
-# you can set your preferred update interval in seconds.
+# If you run BerryBMS as a daemon (command line or through systemd) and in polling
+# mode, you can set your preferred update interval in seconds. This will control
+# how often BerryBMS pulls information from the BMS and the InsightHome.
 updateinterval: 300
