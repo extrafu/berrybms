@@ -11,9 +11,12 @@
 import struct
 import binascii
 import serial # type: ignore
+import logging
+import sys
 
 import paho.mqtt.client as paho # type: ignore
 import json
+import yaml # type: ignore
 
 from JKBMS import JKBMS
 
@@ -25,9 +28,11 @@ class JKBMSSniffer(object):
     RESPONSE_HEADER = bytearray([0x55,0xAA,0xEB,0x90])
 
     def __init__(self,
-                 config):
+                 config,
+                 logger):
           
             self.config = config
+            self.logger = logger
             self.s_con = self.setup_serial(config)
             self.all_bms = [None] * 16
             self.read_buffer = bytearray()
@@ -47,7 +52,8 @@ class JKBMSSniffer(object):
             bms.values["ManufacturerDeviceID"] = bytes[0:15].decode("UTF-8")
             bms.values["HardwareVersion"] = bytes[16:23].decode("UTF-8")
             bms.values["SoftwareVersion"] = bytes[24:31].decode("UTF-8")
-            #print(bms)
+            self.logger.info(bms.formattedOutput())
+            self.logger.info("")
 
     def decode_status(self, bytes, bms_id):
         #print(f'decoding status from bytes: {binascii.hexlify(bytes)} len={len(bytes)}')        
@@ -85,14 +91,16 @@ class JKBMSSniffer(object):
                 "SOCFullChargeCap": SOCFullChargeCap / 1000,
                 "SOCCycleCount": SOCCycleCount,
             })
-            #print(bms)
+            self.logger.info(bms.formattedOutput())
+            self.logger.info("")
 
     def decode_settings(self, bytes, bms_id):
         #print(f'decoding settings from bytes: {binascii.hexlify(bytes)} len={len(bytes)}')
         bms = self.all_bms[bms_id]
         if bms is not None:
             (bms.values["CellCount"],bms.values["BatChargeEN"],bms.values["BatDisChargeEN"]) = struct.unpack("<III", bytes[108:120])
-            #print(bms)
+            self.logger.info(bms.formattedOutput())
+            self.logger.info("")
 
     def read_from_bms(self):        
         l = len(self.read_buffer)
@@ -222,3 +230,15 @@ class JKBMSSniffer(object):
         bms.publish(all_devices)
         paho_client.publish("berrybms", json.dumps(all_devices))
         paho_client.disconnect()
+
+
+# When running from the command line
+if __name__ == "__main__":
+    f = open("config.yaml","r")
+    config = yaml.load(f, Loader=yaml.SafeLoader)
+
+    logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
+    logger = logging.getLogger(__name__)
+
+    jkbms_sniffer = JKBMSSniffer(config, logger)
+    jkbms_sniffer.sniff()

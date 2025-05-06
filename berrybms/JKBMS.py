@@ -108,19 +108,19 @@ class JKBMS(ModbusDevice):
         bms_hw_version = self.values.get('HardwareVersion')
         bms_sw_version = self.values.get('SoftwareVersion')
         dev_addr = self.values.get('DevAddr')
-        alarms = self.values.get('Alarms')
+        alarms = self.values.get('Alarms', 0)
         
         # We skip the first byte, as it can be 0, 1 and 2
         # A 100% SOC will give us a value of 100 with first byte set to 0, 356 when set to 1 and 612 when set to 2
-        soc = self.values.get('SOCStateOfcharge') & 0x0FF
-        cycle_count = self.values.get('SOCCycleCount')
-        pack_voltage = self.values.get('BatVol')
-        cell_count = self.values.get('CellCount')
-        cell_avg_voltage = self.values.get('CellVolAve')
-        battery_current = self.values.get('BatCurrent')
-        discharge_enabled = self.values.get('BatDisChargeEN')
-        pack_capacity = self.values.get('SOCFullChargeCap')
-        pack_remaining = self.values.get('SOCCapRemain')
+        soc = self.values.get('SOCStateOfcharge', 0) & 0x0FF
+        cycle_count = self.values.get('SOCCycleCount', 0)
+        pack_voltage = self.values.get('BatVol', 0)
+        cell_count = self.values.get('CellCount', 0)
+        cell_avg_voltage = self.values.get('CellVolAve', 0)
+        battery_current = self.values.get('BatCurrent', 0)
+        discharge_enabled = self.values.get('BatDisChargeEN', 0)
+        pack_capacity = self.values.get('SOCFullChargeCap', 0)
+        pack_remaining = self.values.get('SOCCapRemain', 0)
         status = "charging" if battery_current > 0 else "discharging"
 
         s = f"== {self.name} (id {self.id}) - {bms_model} (v{bms_hw_version}) - sw v{bms_sw_version} dev_addr: {dev_addr}) ==\n"
