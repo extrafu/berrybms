@@ -29,7 +29,8 @@ class ConextInsightHome(ModbusDevice):
         "865-1050-01":  ConextSCP,
         "865-1060-01":  ConextAGS,      # Missing -01 in documentation
         "865-1080-01":  ConextBattMon,  # Not documented
-        "865-6848-01":  ConextXW
+        "865-6848-01":  ConextXW,       # XW6848+
+        "865-6848-21" : ConextXW        # XW6848 Pro
     }
 
     def __init__(self,

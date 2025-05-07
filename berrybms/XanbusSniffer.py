@@ -404,6 +404,12 @@ class XanbusSniffer(object):
                 return
                 print(f'{pgn} {src} {dst} {binascii.hexlify(buffer)}')
 
+            # Sent by XW6848 Pro only
+            case 0x1DC00:
+                return
+                print(f'{pgn} {src} {dst} {binascii.hexlify(buffer)}')
+
+
             # unknown: 75008 1 0 Timestamp: 1737842977.896904    ID: 19250001    X Rx                DL:  4    10 00 83 03                 Channel: can0
             # unknown: 75008 1 0 Timestamp: 1737842977.906757    ID: 19250001    X Rx                DL:  4    10 00 85 13                 Channel: can0
             # unknown: 75008 1 0 Timestamp: 1737842977.916757    ID: 19250001    X Rx                DL:  4    10 00 86 33                 Channel: can0
