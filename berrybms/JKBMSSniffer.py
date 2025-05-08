@@ -36,6 +36,7 @@ class JKBMSSniffer(object):
             self.s_con = self.setup_serial(config)
             self.all_bms = [None] * 16
             self.read_buffer = bytearray()
+            self.must_stop = False
     
     def setup_serial(self, config):
         s_con = serial.Serial(config['bms']['jk_sniffer']['port'])
@@ -178,6 +179,10 @@ class JKBMSSniffer(object):
         response_count = 1
 
         while True:
+            if self.must_stop:
+                self.s_con.close()
+                return
+
             response = self.read_from_bms()
 
             if response != None:
@@ -231,6 +236,8 @@ class JKBMSSniffer(object):
         paho_client.publish("berrybms", json.dumps(all_devices))
         paho_client.disconnect()
 
+    def stop(self):
+        self.must_stop = True
 
 # When running from the command line
 if __name__ == "__main__":

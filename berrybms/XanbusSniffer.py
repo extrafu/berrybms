@@ -41,6 +41,7 @@ class XanbusSniffer(object):
         self.all_xanbus_devices = dict()
         self.unknown_bytes = bytearray()
         self.xanbus_queue = dict()
+        self.must_stop = False
     
     def processBattMonSts(self, src, bytes):
         # TODO: decode voltage midpoints and remaining data
@@ -242,6 +243,14 @@ class XanbusSniffer(object):
                 #print(f'src={src} dc_out_energy_day={dc_out_energy_day} dc_out_energy_month={dc_out_energy_month}')
                 #print(f'pad5={hex(pad5)} pad6={pad6}')
 
+    def processUnknown3(self, src, bytes):
+        #print(f'{self.processUnknown3.__name__} src = {src} len = {len(bytes)} bytes={binascii.hexlify(bytes)}')
+        # b'49 01 20 01 01 00 00 00'
+        (pad1,) = struct.unpack('<B7x', bytes)
+        #print(f'pad1={pad1:x}')
+        #if pad1 == 0x49:
+        #    print(f'{self.processUnknown3.__name__} src = {src} len = {len(bytes)} bytes={binascii.hexlify(bytes)}')
+
     def processProdInfoSts(self, src, bytes):
         #print(f'{processProdInfoSts.__name__} src = {src} len = {len(bytes)} bytes={binascii.hexlify(bytes)}')
         # b'07 58572041475300000000000000000000 3836352d313036302d303100 ffff ffffffffffffffffffffffffffffffffff' -- AGS
@@ -406,9 +415,8 @@ class XanbusSniffer(object):
 
             # Sent by XW6848 Pro only
             case 0x1DC00:
-                return
-                print(f'{pgn} {src} {dst} {binascii.hexlify(buffer)}')
-
+                #return
+                self.processUnknown3(src, buffer)
 
             # unknown: 75008 1 0 Timestamp: 1737842977.896904    ID: 19250001    X Rx                DL:  4    10 00 83 03                 Channel: can0
             # unknown: 75008 1 0 Timestamp: 1737842977.906757    ID: 19250001    X Rx                DL:  4    10 00 85 13                 Channel: can0
@@ -461,6 +469,10 @@ class XanbusSniffer(object):
         need_to_update = True
 
         while True:
+            if self.must_stop:
+                bus.shutdown()
+                return
+
             ## TEST
             # if not HAS_SENT_MESSAGE:
             #     aid = Iso11783Encode(59904, 6, 6, 6)
@@ -557,6 +569,8 @@ class XanbusSniffer(object):
                 need_to_update = False
                 self.logger.info("Will update things in about 5 seconds...")
 
+    def stop(self):
+        self.must_stop = True
 
 # When running from the command line
 if __name__ == "__main__":

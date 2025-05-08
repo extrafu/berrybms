@@ -30,7 +30,9 @@ from XanbusSniffer import XanbusSniffer
 all_modbus_devices = []
 paho_client = None
 jkbms_sniffer = None
+jkbms_sniffer_thread = None
 xanbus_sniffer = None
+xanbus_sniffer_thread = None
 
 def cleanup(_signo, _stack_frame):
     print("Cleaning up before being terminated!")
@@ -41,11 +43,23 @@ def cleanup(_signo, _stack_frame):
     global all_modbus_devices
     for device in all_modbus_devices:
         device.disconnect()
+
+    if jkbms_sniffer != None:
+        jkbms_sniffer.stop()
+        jkbms_sniffer_thread.join()
+        print("JKBMS sniffer thread stopped.")
+
+    if xanbus_sniffer != None:
+        xanbus_sniffer.stop()
+        xanbus_sniffer_thread.join()
+        print("Xanbus sniffer thread stopped.")
+
     sys.exit(0)
 
 def main(daemon):
     # Setup the signal handler
     signal.signal(signal.SIGTERM, cleanup)
+    signal.signal(signal.SIGINT, cleanup)
 
     # Load the YAML configuration file
     f = open("config.yaml","r")
@@ -59,7 +73,7 @@ def main(daemon):
     while True:
         # Connect to the MQTT server. We do it each time since it's not costly
         # and avoids long keepalive if the updateinterval is set to a high value.
-        global paho_client, jkbms_sniffer, xanbus_sniffer, all_modbus_devices
+        global paho_client, jkbms_sniffer, jkbms_sniffer_thread, xanbus_sniffer, xanbus_sniffer_thread, all_modbus_devices
         paho_client = paho.Client()
         try:
             paho_client.connect(config['mqtt']['host'], int(config['mqtt']['port']), 60)
@@ -87,8 +101,8 @@ def main(daemon):
             if key == "jk_sniffer":
                 if jkbms_sniffer == None:
                     jkbms_sniffer = JKBMSSniffer(config, logger)
-                    t = threading.Thread(target=jkbms_sniffer.sniff, daemon=False)
-                    t.start()
+                    jkbms_sniffer_thread = threading.Thread(target=jkbms_sniffer.sniff, daemon=False)
+                    jkbms_sniffer_thread.start()
                     print("Started JKBMS sniffer thread!")
                 continue
 
@@ -128,8 +142,8 @@ def main(daemon):
         if config['conext'].get('xanbus_sniffer', None) != None:
             if xanbus_sniffer == None:
                 xanbus_sniffer = XanbusSniffer(config, logger)
-                t = threading.Thread(target=xanbus_sniffer.sniff, daemon=False)
-                t.start()
+                xanbus_sniffer_thread = threading.Thread(target=xanbus_sniffer.sniff, daemon=False)
+                xanbus_sniffer_thread.start()
                 print("Started Xanbus sniffer thread!")
 
         if config['conext']['insighthome'] != None:
