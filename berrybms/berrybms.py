@@ -36,11 +36,9 @@ xanbus_sniffer_thread = None
 
 def cleanup(_signo, _stack_frame):
     print("Cleaning up before being terminated!")
-    global paho_client
     if paho_client != None:
         paho_client.disconnect()
 
-    global all_modbus_devices
     for device in all_modbus_devices:
         device.disconnect()
 
