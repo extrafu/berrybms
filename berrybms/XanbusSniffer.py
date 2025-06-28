@@ -92,14 +92,16 @@ class XanbusSniffer(object):
                 # b'03 33 fc 01 ff 42d50100   c206        00 00 05 7017 ffff f900 00 00 f900 00 00 03 7f 02 ff 42d50100      cc06        00 00 05 7017   ffff  2301  0000 2301 0000 04 7fffff'
                 #                  LOAD_V_LN1 LOAD_I_LN1           GF1  GF2  p11        p15                    LOAD_V_LN_2   LOAD_I_LN2           LOAD_F AC2_F pad28      pad30
                 #   B  B  B  B  B  I          h           B  B  B  h    h    h     B  B  h     B  B  B  B  B  B  I             h           B  B  B  h      h     H     h    H
-                (status,assoc,p1,p2,p3,load_v_ln1,load_i_ln1,p4,p5,p6,gen1_f,gen2_f,p11,p13,p14,p15,p17,p18,p19,p20,p21,p22,load_v_ln2,load_i_ln2,p25,p26,p27,load_f,ac2_f,pad28,pad29,pad30) = struct.unpack('<5BIh1BBBhhhBBh6BIhBBBhhHhH6x', bytes)
+                (status,assoc,p1,p2,p3,load_v_ln1,load_i_ln1,p4,p5,p6,gen1_f,gen2_f,p11,p13,p14,p15,p17,p18,p19,p20,p21,p22,load_v_ln2,load_i_ln2,p25,p26,p27,load_f,ac2_f,pad28,pad29,pad30) = struct.unpack('<5BIh1BBBhhhBBh6BIhBBBhhhhH6x', bytes)
                 load_i = load_i_ln1+load_i_ln2
+
                 load_p = p11+pad28
 
                 if assoc == 0x33:
                     xw.values["LoadACPowerApparent"] = load_p
                 else:
-                    xw.values["GeneratorACPowerApparent"] = load_p
+                    # FIXME: why is it negative for the generator IN?
+                    xw.values["GeneratorACPowerApparent"] = load_p*-1
 
                 #print(f'load_p={load_p} gen1_f={gen1_f} gen2_f={gen2_f}') # when assoc == 13, we have 2 freq, otherwise load_f == gen1_f
                 #print(f'src={src} load_v_ln1={load_v_ln1/1000}v load_i_ln1={load_i_ln1/1000}A load_v_ln2={load_v_ln2/1000}v load_i_ln2={load_i_ln2/1000}A load_f={load_f} ac2_f={ac2_f} load_i={load_i/1000}A load_p={load_p:.0f}W p11={p11} p15={p15} pad28={pad28} pad29={pad30}')
@@ -146,8 +148,8 @@ class XanbusSniffer(object):
             # XW's DC connection (to the battery) - charging from generator or pulling from battery
             # TODO: why is power positive when discharging?
             if isinstance(device, ConextXW):
-                device.values["ChargeDCCurrent"] = current/1000
-                device.values["ChargeDCPower"] = power*-1
+                device.values["ChargeDCCurrent"] = current/1000*-1
+                device.values["ChargeDCPower"] = power
 
             # MPPT to the battery - charging from PV
             # TODO: why is current negative?

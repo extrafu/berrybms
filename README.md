@@ -62,7 +62,7 @@ Optionally, you can also use `socketcand` (https://github.com/linux-can/socketca
 
 You can use `sniffer mode` and `polling mode` simultaneously.
 
-## Using
+## Using It
 
 First, modify `config.yaml` to your needs.
 
@@ -82,7 +82,7 @@ If you want to try the Web GUI, simply do:
 python3 berrybms/berrydash.py
 ```
 
-and open using your favorite web browser `http://<IP of your Raspberry PI device>:8080/`.
+and open `http://<IP of your Raspberry PI device>:8080/` using your favorite web browser.
 
 ## Running As Service
 

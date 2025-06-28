@@ -32,9 +32,9 @@ conext:
   insighthome:
     host: "192.168.1.5"
     port: 503
-    ids: [11,170,171,190]
+    ids: [11,50,170,171,190]
 
-  # Hack to preset Modbus ID <> Hardware Serial Number when it can't be fetch
+  # Hack to preset Modbus ID <> Hardware Serial Number when it can't be fetched
   # like it's the case for the XW6848+/Pro. Get the value for your Conext device
   # from the Conext InsightHome's web interface.
   serial_number_hack:
@@ -42,7 +42,7 @@ conext:
     11: "00001DADECC6"
 
   # Define host/port if you want to use socketcand otherwise, socketcan will be used
-  # channel must be defined in both cases.
+  # The channel parameter must be defined in both cases.
   xanbus_sniffer:
     host: "192.168.1.4"
     port: "29536"
