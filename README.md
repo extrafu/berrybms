@@ -70,7 +70,8 @@ Once the configuration file has been adjusted to your needs, you can use this ap
 
 ```
 cd ~/berrybms
-python3 -m venv
+python3 -m venv venv
+source venv/bin/activate
 python3 berrybms/berrybms.py
 ```
 
