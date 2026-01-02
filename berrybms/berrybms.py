@@ -137,26 +137,27 @@ def main(daemon):
 
         # We start our Xanbus sniffer thread after polling (if enabled) the
         # InsightHome as it'll update properly populated data structures from there
-        if config['conext'].get('xanbus_sniffer', None) != None:
-            if xanbus_sniffer == None:
-                xanbus_sniffer = XanbusSniffer(config, logger)
-                xanbus_sniffer_thread = threading.Thread(target=xanbus_sniffer.sniff, daemon=False)
-                xanbus_sniffer_thread.start()
-                print("Started Xanbus sniffer thread!")
+        if config.get('conext') is not None:
+            if config['conext'].get('xanbus_sniffer', None) != None:
+                if xanbus_sniffer == None:
+                    xanbus_sniffer = XanbusSniffer(config, logger)
+                    xanbus_sniffer_thread = threading.Thread(target=xanbus_sniffer.sniff, daemon=False)
+                    xanbus_sniffer_thread.start()
+                    print("Started Xanbus sniffer thread!")
 
-        if config['conext']['insighthome'] != None:
-            conext = ConextInsightHome(config['conext']['insighthome']['host'],
-                                       config['conext']['insighthome']['port'],
-                                       config['conext']['insighthome'].get('ids', None),
-                                       config['conext'].get('serial_number_hack', None))
-            all_modbus_devices.append(conext)
-            c = conext.connect()
-            devices = conext.allDevices()
-            for device in devices:
-                device.publish(all_devices)
-                #print("%s: %s\n" % (type(device).__name__, device))
-                #device.dump()
-                print(device.formattedOutput(),'\n')
+            if config['conext']['insighthome'] != None:
+                conext = ConextInsightHome(config['conext']['insighthome']['host'],
+                                            config['conext']['insighthome']['port'],
+                                            config['conext']['insighthome'].get('ids', None),
+                                            config['conext'].get('serial_number_hack', None))
+                all_modbus_devices.append(conext)
+                c = conext.connect()
+                devices = conext.allDevices()
+                for device in devices:
+                    device.publish(all_devices)
+                    #print("%s: %s\n" % (type(device).__name__, device))
+                    #device.dump()
+                    print(device.formattedOutput(),'\n')
 
         # Publish all values in MQTT
         if paho_client != None:
