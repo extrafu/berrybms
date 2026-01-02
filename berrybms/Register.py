@@ -35,6 +35,14 @@ class Register(object):
         self.length = length
         self.values[name] = None
 
+    @property
+    def value(self):
+        return self.values[self.name]
+
+    @value.setter
+    def value(self, val):
+        self.values[self.name] = val
+
     def getValue(self, c, reload=False):
 
         if reload == True:
